@@ -47,7 +47,7 @@ Next.js 16 · React 19 · Tailwind 4 · Supabase · Flutterwave · Resend · Mux
 
 6. **Hero video (Mux).** Upload from Studio → Hero video. In production, add a Mux webhook to `https://YOUR_DOMAIN/api/webhooks/mux` and put its signing secret in `MUX_WEBHOOK_SECRET`. Locally, the page polls Mux instead.
 
-7. **Deploy to Vercel.** Import the repo, add every variable from `.env.local`, and set `NEXT_PUBLIC_SITE_URL` to the live domain. `vercel.json` schedules the late-order and cart-reminder jobs hourly (hourly crons need a Vercel Pro plan; on Hobby they run once a day).
+7. **Deploy to Vercel.** Import the repo, add every variable from `.env.local`, and set `NEXT_PUBLIC_SITE_URL` to the live domain. `vercel.json` runs the late-order job daily at 08:00 UTC and cart reminders at 18:00 UTC, the most often the Hobby plan allows. For hourly runs, upgrade to Pro and change the schedules to `0 * * * *`.
 
 ## How an order moves
 
