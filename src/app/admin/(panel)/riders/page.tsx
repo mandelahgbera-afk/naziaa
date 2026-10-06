@@ -39,7 +39,30 @@ export default async function RidersPage() {
           <Card>
             <p className="eyebrow mb-4">Last 30 days</p>
             {riders?.length ? (
-              <div className="overflow-x-auto">
+              <>
+              <ul className="space-y-3 md:hidden">
+                {riders.map((r) => {
+                  const s = stats(r.id);
+                  return (
+                    <li key={r.id} className={`rounded-2xl bg-cream p-4 ${r.is_active ? "" : "opacity-50"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-serif text-xl">{r.name}</p>
+                          <p className="text-xs text-muted">{r.phone}{r.vehicle ? ` · ${r.vehicle}` : ""}</p>
+                          {s.active > 0 && <p className="text-xs text-amber">{s.active} on the go</p>}
+                        </div>
+                        <RiderToggle id={r.id} active={r.is_active} />
+                      </div>
+                      <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
+                        {[["Delivered", s.delivered], ["On time", s.onTime === null ? "—" : `${s.onTime}%`], ["Rating", s.rating ?? "—"], ["Issues", s.failed + s.complaints]].map(([k, v]) => (
+                          <div key={String(k)} className="rounded-xl bg-paper py-2"><dd className="font-serif text-lg leading-none">{v}</dd><dt className="mt-1 text-[10px] text-muted">{k}</dt></div>
+                        ))}
+                      </dl>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead className="text-left text-xs tracking-[0.12em] text-muted uppercase">
                     <tr>
@@ -74,6 +97,7 @@ export default async function RidersPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             ) : (
               <Empty>No riders yet. Add your first rider to start assigning deliveries.</Empty>
             )}

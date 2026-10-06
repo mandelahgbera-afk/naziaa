@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { advanceOrder, assignRider } from "@/app/admin/actions";
 import { formatNaira } from "@/lib/catalog";
 import { STATUS_LABEL } from "@/lib/order-status";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { haptic } from "@/lib/use-media";
 import { useAction } from "./use-action";
 
 export type BoardOrder = {
@@ -69,6 +70,15 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
 
   const failed = orders.filter((o) => o.status === "failed");
 
+  // phones: one column at a time, picked from a segmented control or by swiping
+  const [tab, setTab] = useState<string>(() => COLUMNS.find((c) => orders.some((o) => o.status === c.key))?.key ?? "paid");
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const step = (dir: 1 | -1) => {
+    const i = COLUMNS.findIndex((c) => c.key === tab);
+    const next = COLUMNS[i + dir];
+    if (next) { setTab(next.key); haptic(); }
+  };
+
   return (
     <div>
       {failed.length > 0 && (
@@ -85,12 +95,39 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="sticky top-[calc(3.6rem+env(safe-area-inset-top))] z-20 -mx-4 mb-4 bg-cream/90 px-4 py-2 backdrop-blur-xl md:hidden">
+        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-cream-deep p-1" role="tablist" aria-label="Order stages">
+          {COLUMNS.map((c) => {
+            const n = orders.filter((o) => o.status === c.key).length;
+            const on = tab === c.key;
+            return (
+              <button key={c.key} type="button" role="tab" aria-selected={on} onClick={() => { setTab(c.key); haptic(); }} className="relative rounded-xl px-1 py-2 text-center">
+                {on && <motion.span layoutId="board-seg" className="absolute inset-0 rounded-xl bg-paper shadow-[0_1px_0_var(--color-line)]" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                <span className="relative block font-serif text-xl leading-none">{n}</span>
+                <span className={`relative mt-1 block truncate text-[10px] ${on ? "text-ink" : "text-muted"}`}>{c.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div
+        className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4"
+        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchEnd={(e) => {
+          const t = touch.current;
+          touch.current = null;
+          if (!t) return;
+          const dx = e.changedTouches[0].clientX - t.x;
+          const dy = e.changedTouches[0].clientY - t.y;
+          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+        }}
+      >
         {COLUMNS.map((col) => {
           const list = orders.filter((o) => o.status === col.key);
           return (
-            <section key={col.key} className="rounded-[24px] bg-cream-deep/70 p-3">
-              <header className="flex items-baseline justify-between px-2 pt-2 pb-3">
+            <section key={col.key} className={`${tab === col.key ? "block" : "hidden"} rounded-[24px] bg-cream-deep/70 p-3 md:block`}>
+              <header className="hidden items-baseline justify-between px-2 pt-2 pb-3 md:flex">
                 <div>
                   <h2 className="font-serif text-2xl">{col.title}</h2>
                   <p className="text-xs text-muted">{col.hint}</p>
@@ -126,13 +163,13 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
                         </Link>
                         <div className="mt-3 border-t border-line pt-3">
                           {o.status === "paid" && (
-                            <button type="button" disabled={pending} onClick={() => run(() => advanceOrder(o.id, "packed"), "Marked packed")} className="w-full rounded-full bg-dark py-2 text-xs tracking-[0.16em] text-paper uppercase transition hover:bg-amber disabled:opacity-50">
+                            <button type="button" disabled={pending} onClick={() => run(() => advanceOrder(o.id, "packed"), "Marked packed")} className="pressable w-full rounded-full bg-dark py-3 text-xs tracking-[0.16em] text-paper uppercase transition hover:bg-amber disabled:opacity-50 md:py-2">
                               Mark packed
                             </button>
                           )}
                           {o.status === "packed" && <RiderSelect riders={riders} disabled={pending} onPick={(rid) => run(() => assignRider(o.id, rid), "Rider assigned")} label="Assign rider" />}
                           {o.status === "assigned" && (
-                            <button type="button" disabled={pending} onClick={() => run(() => advanceOrder(o.id, "out_for_delivery"), "Customer notified: on the way")} className="w-full rounded-full border border-ink py-2 text-xs tracking-[0.16em] uppercase transition hover:bg-ink hover:text-paper disabled:opacity-50">
+                            <button type="button" disabled={pending} onClick={() => run(() => advanceOrder(o.id, "out_for_delivery"), "Customer notified: on the way")} className="pressable w-full rounded-full border border-ink py-3 text-xs tracking-[0.16em] uppercase transition hover:bg-ink hover:text-paper disabled:opacity-50 md:py-2">
                               Send out for delivery
                             </button>
                           )}
@@ -159,7 +196,7 @@ function RiderSelect({ riders, onPick, disabled, label }: { riders: { id: string
       disabled={disabled}
       defaultValue=""
       onChange={(e) => e.target.value && onPick(e.target.value)}
-      className="w-full rounded-full border border-line bg-cream px-3 py-2 text-xs outline-none focus:border-amber"
+      className="w-full rounded-full border border-line bg-cream px-3 py-3 text-sm outline-none focus:border-amber md:py-2 md:text-xs"
       aria-label={label}
     >
       <option value="" disabled>{label}…</option>

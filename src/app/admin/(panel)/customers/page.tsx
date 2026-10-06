@@ -43,9 +43,9 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
   return (
     <>
       <PageHead eyebrow="Relationships" title="Customers" />
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
         {SEGMENTS.map((s) => (
-          <Link key={s.id} href={`/admin/customers?seg=${s.id}`} className={`rounded-full px-4 py-2 text-sm transition ${seg === s.id ? "bg-dark text-paper" : "bg-paper hover:bg-cream-deep"}`}>
+          <Link key={s.id} href={`/admin/customers?seg=${s.id}`} className={`shrink-0 rounded-full px-4 py-2 text-sm transition ${seg === s.id ? "bg-dark text-paper" : "bg-paper hover:bg-cream-deep"}`}>
             {s.label}
           </Link>
         ))}
@@ -54,7 +54,23 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
 
       <Card>
         {filtered.length ? (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-line md:hidden">
+            {filtered.map((c) => (
+              <li key={c.id} className="py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="truncate font-serif text-lg">{c.full_name ?? c.email}</p>
+                  <p className="shrink-0 text-sm">{formatNaira(c.ltv)}</p>
+                </div>
+                <p className="text-xs text-muted">{c.count} order{c.count === 1 ? "" : "s"} · {c.days === null ? "no orders yet" : c.days === 0 ? "ordered today" : `last ${c.days}d ago`}</p>
+                <div className="mt-2 flex gap-2">
+                  {c.phone && <a className="pressable rounded-full bg-cream px-3 py-1.5 text-xs" href={`https://wa.me/${c.phone.replace(/D/g, "").replace(/^0/, "234")}`} target="_blank" rel="noreferrer">WhatsApp</a>}
+                  <a className="pressable rounded-full bg-cream px-3 py-1.5 text-xs" href={`mailto:${c.email}`}>Email</a>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-left text-xs tracking-[0.12em] text-muted uppercase">
                 <tr>
@@ -84,6 +100,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <Empty>No customers in this segment yet.</Empty>
         )}

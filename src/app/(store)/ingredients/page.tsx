@@ -19,7 +19,7 @@ const READ_MORE: Record<string, { href: string; label: string }> = {
 export default function IngredientsPage() {
   return (
     <>
-      <section className="wrap pt-40 pb-20 md:pt-48">
+      <section className="wrap pt-28 pb-14 md:pt-48 md:pb-20">
         <p className="eyebrow">Ingredient library</p>
         <h1 className="display mt-6 max-w-5xl">
           <RiseWords text="Four botanicals, zero fillers." italic={["zero", "fillers."]} immediate />
@@ -49,7 +49,7 @@ export default function IngredientsPage() {
         </section>
       ))}
 
-      <section className="bg-dark py-28 text-center text-paper">
+      <section className="bg-dark py-20 text-center md:py-28 text-paper">
         <p className="eyebrow text-paper/60">Put them to work</p>
         <h2 className="title mx-auto mt-4 max-w-2xl text-paper">The ritual is half the formula.</h2>
         <div className="mt-10 flex flex-wrap justify-center gap-3">

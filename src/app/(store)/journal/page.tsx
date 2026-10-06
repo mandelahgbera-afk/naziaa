@@ -13,7 +13,7 @@ export default function JournalPage() {
   const [lead, ...rest] = ARTICLES;
   return (
     <>
-      <section className="wrap pt-40 pb-16 md:pt-48">
+      <section className="wrap pt-28 pb-12 md:pt-48 md:pb-16">
         <p className="eyebrow">The journal</p>
         <h1 className="display mt-6 max-w-4xl">
           <RiseWords text="Wisdom, history & the science." italic={["science."]} immediate />

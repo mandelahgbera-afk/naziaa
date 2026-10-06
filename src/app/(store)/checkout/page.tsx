@@ -17,9 +17,9 @@ export default async function CheckoutPage() {
   const [settings, products] = await Promise.all([getSettings(), getProducts()]);
 
   return (
-    <section className="wrap pt-36 pb-28 md:pt-44">
+    <section className="wrap pt-24 pb-20 md:pt-44 md:pb-28">
       <p className="eyebrow">Checkout</p>
-      <h1 className="title mt-3 mb-14">Almost yours.</h1>
+      <h1 className="title mt-3 mb-10 md:mb-14">Almost yours.</h1>
       {zones.length === 0 ? (
         <p className="rounded-3xl bg-paper p-8 text-ink-soft">
           Checkout opens as soon as delivery areas are set up. Please check back shortly, or email{" "}

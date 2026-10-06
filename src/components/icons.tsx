@@ -144,7 +144,7 @@ export function BagIcon({ size = 22, level = 0, ...p }: P & { level?: number }) 
   const clamped = Math.max(0, Math.min(1, level));
   const top = 9;
   const bottom = 20.2;
-  const y = bottom - (bottom - top) * clamped;
+  const y = clamped === 0 ? 24 : bottom - (bottom - top) * clamped;
   return (
     <svg {...base(size)} {...p}>
       <defs>
@@ -168,3 +168,46 @@ export function BagIcon({ size = 22, level = 0, ...p }: P & { level?: number }) 
     </svg>
   );
 }
+
+export const HomeIcon = ({ size, filled, ...p }: P & { filled?: boolean }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 10.2 12 4l8 6.2V19a1.2 1.2 0 0 1-1.2 1.2H15v-5.4a3 3 0 0 0-6 0v5.4H5.2A1.2 1.2 0 0 1 4 19Z" fill={filled ? "currentColor" : "none"} fillOpacity={filled ? 0.14 : 0} />
+  </svg>
+);
+
+export const BottleIcon = ({ size, filled, ...p }: P & { filled?: boolean }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M10.2 3.5h3.6v3.3h-3.6Z" />
+    <path d="M9.4 6.8h5.2l.9 2.2c.9.5 1.5 1.5 1.5 2.6v7.2a1.7 1.7 0 0 1-1.7 1.7H8.7A1.7 1.7 0 0 1 7 18.8v-7.2c0-1.1.6-2.1 1.5-2.6Z" fill={filled ? "currentColor" : "none"} fillOpacity={filled ? 0.14 : 0} />
+    <path d="M9.5 13h5M9.5 15.6h3.4" opacity=".7" />
+  </svg>
+);
+
+export const MoreIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="6" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="18" cy="12" r="1.3" fill="currentColor" />
+  </svg>
+);
+
+export const ListIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <rect x="4" y="4.5" width="16" height="15" rx="3" />
+    <path d="M8 9.5h8M8 13h8M8 16.5h5" />
+  </svg>
+);
+
+export const ChartIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4.5 19.5h15" />
+    <path d="M7 16v-4M11 16V8M15 16v-6M19 16V5" />
+  </svg>
+);
+
+export const AlertIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 4.2 20.5 19H3.5Z" />
+    <path d="M12 10v4M12 16.6v.1" />
+  </svg>
+);

@@ -17,7 +17,7 @@ export function IngredientRail({ ingredients }: { ingredients: Ingredient[] }) {
   const nudge = (dir: 1 | -1) => rail.current?.scrollBy({ left: dir * rail.current.clientWidth * 0.8, behavior: "smooth" });
 
   return (
-    <section className="py-28 md:py-40" aria-labelledby="ingredients-title">
+    <section className="py-20 md:py-40" aria-labelledby="ingredients-title">
       <div className="wrap flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <p className="eyebrow">Ingredient library</p>

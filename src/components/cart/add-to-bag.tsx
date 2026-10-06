@@ -31,7 +31,7 @@ export function AddToBag({ product, qty = 1, className = "", compact = false }: 
   };
 
   return (
-    <button type="button" onClick={onClick} className={`btn btn-dark min-w-[13rem] ${className}`} aria-live="polite">
+    <button type="button" onClick={onClick} className={`btn btn-dark pressable ${compact ? "" : "min-w-[13rem]"} ${className}`} aria-live="polite">
       <AnimatePresence mode="wait" initial={false}>
         {phase === "idle" && (
           <motion.span key="idle" className="flex items-center gap-3" initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -14, opacity: 0 }}>

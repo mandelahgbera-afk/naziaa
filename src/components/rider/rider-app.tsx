@@ -67,8 +67,8 @@ export function RiderApp({ riderId, name, jobs, doneToday }: { riderId: string |
   }, [router]);
 
   return (
-    <div className="min-h-dvh bg-cream pb-16">
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-darker px-5 py-4 text-paper">
+    <div className="min-h-dvh bg-cream pb-[calc(4rem+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-darker px-5 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 text-paper">
         <Wordmark sub={false} />
         <span className="text-sm text-paper/70">{name.split(" ")[0]}</span>
       </header>

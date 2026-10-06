@@ -35,6 +35,16 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
 
       {late && <p className="mb-6 rounded-2xl bg-[#fbeee9] px-5 py-3 text-sm text-[#7a2e12]">Running late — promised by {new Date(o.promised_by!).toLocaleString("en-NG", { weekday: "short", hour: "numeric", minute: "2-digit" })}.</p>}
 
+      {/* phones: contact + next move first, where the thumb is */}
+      <div className="mb-4 space-y-4 xl:hidden">
+        <div className="grid grid-cols-3 gap-2">
+          <a href={`tel:${o.phone}`} className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Call</a>
+          <a href={`https://wa.me/${o.phone.replace(/D/g, "").replace(/^0/, "234")}`} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">WhatsApp</a>
+          {mapLink ? <a href={mapLink} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Map</a> : <a href={`mailto:${o.email}`} className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Email</a>}
+        </div>
+        <OrderActions orderId={o.id} status={o.status} next={NEXT_STATUSES[o.status] ?? []} riders={riders ?? []} riderId={o.rider_id} />
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="space-y-4 xl:col-span-2">
           <Card>
@@ -60,6 +70,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
             )}
           </Card>
 
+          <div className="hidden xl:block">
           <OrderActions
             orderId={o.id}
             status={o.status}
@@ -67,6 +78,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
             riders={riders ?? []}
             riderId={o.rider_id}
           />
+          </div>
 
           <Card>
             <p className="eyebrow mb-4">Timeline</p>

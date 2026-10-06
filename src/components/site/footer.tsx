@@ -6,8 +6,8 @@ import { NewsletterForm } from "./newsletter-form";
 export function Footer({ products, settings }: { products: Product[]; settings: StorefrontSettings }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="relative overflow-hidden bg-darker text-paper">
-      <div className="wrap grid gap-16 pt-24 pb-12 md:grid-cols-12">
+    <footer className="relative overflow-hidden bg-darker pb-tabbar text-paper md:pb-0">
+      <div className="wrap grid gap-12 pt-16 pb-10 md:grid-cols-12 md:gap-16 md:pt-24 md:pb-12">
         <div className="md:col-span-5">
           <p className="eyebrow text-paper/60">The weekly ritual</p>
           <h2 className="title mt-4 max-w-md text-paper">Nourish your scalp, protect your ends.</h2>

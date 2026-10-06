@@ -2,10 +2,10 @@ import { STATUS_LABEL, STATUS_TONE } from "@/lib/order-status";
 
 export function PageHead({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: React.ReactNode }) {
   return (
-    <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="mb-6 flex flex-col justify-between gap-4 md:mb-10 md:flex-row md:items-end">
       <div>
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="mt-2 font-serif text-4xl md:text-5xl">{title}</h1>
+        <h1 className="mt-1 font-serif text-[2.1rem] leading-tight md:mt-2 md:text-5xl">{title}</h1>
       </div>
       {children && <div className="flex flex-wrap gap-3">{children}</div>}
     </div>

@@ -23,7 +23,7 @@ export default async function ArticlePage({ params }: PageProps<"/journal/[slug]
   return (
     <article>
       <ReadingProgress />
-      <header className="wrap pt-40 md:pt-48">
+      <header className="wrap pt-28 md:pt-48">
         <Link href="/journal" className="eyebrow link-underline">← The journal</Link>
         <p className="eyebrow mt-10" style={{ color: article.hue }}>{article.category} · {article.minutes} min read</p>
         <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.6rem,6vw,5.2rem)] leading-[1.02] tracking-[-0.02em]">{article.title}</h1>

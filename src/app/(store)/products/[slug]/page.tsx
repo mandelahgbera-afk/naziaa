@@ -53,7 +53,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       <ProductDetail product={product} />
       <Pillars />
       {others.length > 0 && (
-        <section className="wrap py-28" aria-labelledby="pair-title">
+        <section className="wrap py-20 md:py-28" aria-labelledby="pair-title">
           <p className="eyebrow">Complete the ritual</p>
           <h2 id="pair-title" className="title mt-4">Pairs beautifully with</h2>
           <div className="mt-12 grid gap-8 md:grid-cols-2">

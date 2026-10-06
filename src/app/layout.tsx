@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   },
   description:
     "Small-batch, cold-infused botanical hair and scalp oils made in Lagos. Rosemary, ashwagandha, hibiscus and bhringraj — formulated to treat shedding at its source.",
+  manifest: "/site.webmanifest",
+  appleWebApp: { capable: true, title: "Nazia", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   openGraph: {
     type: "website",
     siteName: "Nazia Botanics",
@@ -37,6 +40,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#faf3ec",
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

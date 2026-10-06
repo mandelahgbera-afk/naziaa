@@ -1,6 +1,7 @@
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
+import { MobileTabBar } from "@/components/site/mobile-tab-bar";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { getProducts, getSettings } from "@/lib/data";
 
@@ -15,6 +16,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <Header announcements={settings.announcements} />
       <main id="main">{children}</main>
       <Footer products={products} settings={settings} />
+      <MobileTabBar whatsapp={settings.whatsappNumber} instagram={settings.instagram} />
       <CartDrawer products={products} freeDeliveryThresholdKobo={settings.freeDeliveryThresholdKobo} />
     </div>
   );

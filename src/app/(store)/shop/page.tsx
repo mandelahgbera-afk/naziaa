@@ -16,7 +16,7 @@ export default async function ShopPage() {
   const products = await getProducts();
   return (
     <>
-      <section className="wrap pt-40 pb-16 md:pt-48">
+      <section className="wrap pt-28 pb-12 md:pt-48 md:pb-16">
         <p className="eyebrow">The shop</p>
         <h1 className="display mt-6 max-w-4xl">
           <RiseWords text="Treat shedding at its source." italic={["source."]} immediate />

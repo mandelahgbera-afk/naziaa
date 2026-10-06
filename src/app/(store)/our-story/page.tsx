@@ -12,14 +12,14 @@ export const metadata: Metadata = {
 export default function OurStoryPage() {
   return (
     <>
-      <section className="wrap pt-40 pb-20 md:pt-48">
+      <section className="wrap pt-28 pb-14 md:pt-48 md:pb-20">
         <p className="eyebrow">My story</p>
         <h1 className="display mt-6 max-w-5xl">
           <RiseWords text="Rooted in care, grown from calm." italic={["calm."]} immediate />
         </h1>
       </section>
 
-      <section className="wrap grid gap-16 pb-28 md:grid-cols-12">
+      <section className="wrap grid gap-10 pb-16 md:grid-cols-12 md:gap-16 md:pb-28">
         <div className="md:col-span-5">
           <Parallax speed={0.08} className="relative aspect-[3/4] overflow-hidden rounded-t-full rounded-b-[36px] bg-gradient-to-b from-peach to-sand">
             <Image src="/images/products/rl-cutout.webp" alt="A bottle of Nazia Rosemary Lavender oil" fill sizes="(min-width: 768px) 38vw, 90vw" className="object-contain p-12" />
@@ -54,7 +54,7 @@ export default function OurStoryPage() {
 
       <Pillars />
 
-      <section className="wrap py-28 text-center">
+      <section className="wrap py-20 text-center md:py-28">
         <p className="eyebrow">Join us</p>
         <h2 className="title mt-4">Begin your own ritual.</h2>
         <p className="lede mx-auto mt-6">Every bottle is blended in small batches and shipped with the 5-minute ritual guide.</p>

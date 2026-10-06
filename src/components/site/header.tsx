@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useEffect, useState } from "react";
-import { BagIcon, CloseIcon, MenuIcon } from "@/components/icons";
+import { BagIcon } from "@/components/icons";
 import { cartCount, useCart } from "@/lib/cart";
 import { Wordmark } from "./wordmark";
 
@@ -22,7 +22,6 @@ export function Header({ announcements }: { announcements: string[] }) {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [menu, setMenu] = useState(false);
   const lines = useCart((s) => s.lines);
   const setOpen = useCart((s) => s.setOpen);
   const pulse = useCart((s) => s.pulse);
@@ -35,13 +34,10 @@ export function Header({ announcements }: { announcements: string[] }) {
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
     setScrolled(y > 40);
-    setHidden(y > 240 && y > prev && !menu);
+    setHidden(y > 240 && y > prev);
   });
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMenu(false), [pathname]);
-
-  const light = overHero && !scrolled && !menu;
+  const light = overHero && !scrolled;
 
   return (
     <>
@@ -57,15 +53,7 @@ export function Header({ announcements }: { announcements: string[] }) {
           }`}
         >
           <nav className="wrap flex h-16 items-center justify-between md:h-20" aria-label="Main">
-            <button
-              type="button"
-              className="-ml-2 p-2 md:hidden"
-              onClick={() => setMenu((m) => !m)}
-              aria-expanded={menu}
-              aria-label={menu ? "Close menu" : "Open menu"}
-            >
-              {menu ? <CloseIcon /> : <MenuIcon />}
-            </button>
+            <span className="md:hidden" />
 
             <ul className="hidden gap-8 md:flex">
               {NAV.slice(0, 3).map((n) => (
@@ -94,7 +82,7 @@ export function Header({ announcements }: { announcements: string[] }) {
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="relative -mr-2 p-2"
+                className="relative -mr-2 hidden p-2 md:block"
                 aria-label={`Open bag, ${count} item${count === 1 ? "" : "s"}`}
               >
                 <motion.span key={pulse} className="block" animate={pulse ? { rotate: [0, -12, 10, -6, 0], scale: [1, 1.15, 1] } : undefined} transition={{ duration: 0.7 }}>
@@ -119,33 +107,6 @@ export function Header({ announcements }: { announcements: string[] }) {
         </div>
       </motion.header>
 
-      <AnimatePresence>
-        {menu && (
-          <motion.div
-            className="fixed inset-0 z-30 flex flex-col justify-end bg-cream px-6 pt-32 pb-10 md:hidden"
-            initial={{ clipPath: "inset(0 0 100% 0)" }}
-            animate={{ clipPath: "inset(0 0 0% 0)" }}
-            exit={{ clipPath: "inset(0 0 100% 0)" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <ul className="space-y-2">
-              {NAV.map((n, i) => (
-                <motion.li
-                  key={n.href}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + i * 0.06, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <Link href={n.href} className="font-serif text-5xl leading-tight">
-                    {n.label}
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-            <p className="eyebrow mt-12">Small batch · Cold-infused · Lagos</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }

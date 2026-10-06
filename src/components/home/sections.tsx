@@ -25,7 +25,7 @@ export function TrustMarquee() {
 
 export function Statement() {
   return (
-    <section className="wrap py-28 md:py-40">
+    <section className="wrap py-20 md:py-40">
       <p className="eyebrow">The why</p>
       <ScrollInk
         className="mt-8 max-w-5xl font-serif text-[clamp(2rem,4.4vw,3.9rem)] leading-[1.12] tracking-[-0.01em]"
@@ -37,7 +37,7 @@ export function Statement() {
 
 export function ProductShowcase({ products }: { products: Product[] }) {
   return (
-    <section id="shop" className="wrap pb-28 md:pb-40" aria-labelledby="shop-title">
+    <section id="shop" className="wrap pb-20 md:pb-40" aria-labelledby="shop-title">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <p className="eyebrow">The oils</p>
@@ -48,7 +48,7 @@ export function ProductShowcase({ products }: { products: Product[] }) {
         <p className="lede md:max-w-sm">Each bottle is blended by hand in small batches, then shipped with the 5-minute ritual guide.</p>
       </div>
 
-      <div className="mt-16 grid gap-10 md:grid-cols-2 md:gap-8">
+      <div className="mt-10 grid md:mt-16 gap-10 md:grid-cols-2 md:gap-8">
         {products.map((p, i) => (
           <Reveal key={p.slug} delay={i * 0.15} as="article" className="group">
             <Link href={`/products/${p.slug}`} className="block" aria-label={`${p.name} — view details`}>
@@ -94,14 +94,14 @@ const PILLAR_ICONS = [BreathIcon, RootIcon, HandsIcon];
 
 export function Pillars() {
   return (
-    <section className="relative overflow-hidden bg-dark py-28 text-paper md:py-40" aria-labelledby="pillars-title">
+    <section className="relative overflow-hidden bg-dark py-20 text-paper md:py-40" aria-labelledby="pillars-title">
       <div className="pointer-events-none absolute -top-40 -right-40 size-[38rem] rounded-full bg-amber/30 blur-[120px]" />
       <div className="wrap relative">
         <p className="eyebrow text-paper/60">Beyond the bottle</p>
         <h2 id="pillars-title" className="title mt-4 max-w-3xl text-paper">
           <RiseWords text="A holistic approach to hair that grows." italic={["grows."]} />
         </h2>
-        <div className="mt-20 grid gap-14 md:grid-cols-3 md:gap-10">
+        <div className="mt-12 grid gap-10 md:mt-20 md:grid-cols-3 md:gap-14 md:gap-10">
           {PILLARS.map((p, i) => {
             const Icon = PILLAR_ICONS[i];
             return (
@@ -132,7 +132,7 @@ const STEPS = [
 
 export function RitualTeaser() {
   return (
-    <section className="wrap grid items-center gap-16 py-28 md:grid-cols-2 md:py-40" aria-labelledby="ritual-title">
+    <section className="wrap grid items-center gap-10 py-20 md:grid-cols-2 md:gap-16 md:py-40" aria-labelledby="ritual-title">
       <Reveal className="relative mx-auto aspect-square w-full max-w-[520px]">
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-peach to-sand" />
         <div className="absolute inset-[9%] animate-breathe rounded-full bg-gradient-to-br from-honey/70 to-amber-glow/60 blur-[2px]" />
@@ -171,7 +171,7 @@ export function RitualTeaser() {
 
 export function JournalTeaser({ articles }: { articles: Article[] }) {
   return (
-    <section className="bg-cream-deep py-28 md:py-40" aria-labelledby="journal-title">
+    <section className="bg-cream-deep py-20 md:py-40" aria-labelledby="journal-title">
       <div className="wrap">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
@@ -184,7 +184,7 @@ export function JournalTeaser({ articles }: { articles: Article[] }) {
             All articles
           </Link>
         </div>
-        <div className="mt-16 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid md:mt-16 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
           {articles.map((a, i) => (
             <Reveal key={a.slug} delay={i * 0.1} as="article">
               <Link href={`/journal/${a.slug}`} className="group block">

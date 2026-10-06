@@ -52,7 +52,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/or
     "Your oils are being prepared.";
 
   return (
-    <section className="wrap pt-36 pb-28 md:pt-44">
+    <section className="wrap pt-24 pb-20 md:pt-44 md:pb-28">
       <div className="grid gap-14 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <div className="flex items-center gap-5">

@@ -31,6 +31,7 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const sessionId = useRef<string | null>(null);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -134,8 +135,42 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-12 lg:grid-cols-12" noValidate={false}>
-      <div className="space-y-14 lg:col-span-7">
+    <form id="checkout-form" onSubmit={onSubmit} className="grid gap-12 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:grid-cols-12 lg:pb-0" noValidate={false}>
+      {/* phones: a compact, expandable summary up top (like a native checkout) */}
+      <div className="-mt-6 lg:hidden">
+        <button type="button" onClick={() => setSummaryOpen((o) => !o)} aria-expanded={summaryOpen} className="pressable flex w-full items-center justify-between rounded-2xl bg-paper px-5 py-4">
+          <span className="flex items-center gap-3 text-sm text-ink-soft">
+            <span className="flex -space-x-3">
+              {lines.slice(0, 3).map((l) => (
+                <span key={l.slug} className="relative size-9 overflow-hidden rounded-full border-2 border-paper bg-cream-deep">
+                  <Image src={l.image} alt="" fill sizes="36px" className="object-contain p-0.5" />
+                </span>
+              ))}
+            </span>
+            {summaryOpen ? "Hide" : "Show"} order summary
+          </span>
+          <span className="font-serif text-xl">{formatNaira(total)}</span>
+        </button>
+        <AnimatePresence initial={false}>
+          {summaryOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+              <div className="mt-2 rounded-2xl bg-paper px-5 py-4">
+                <ul className="space-y-2 text-sm">
+                  {lines.map((l) => (
+                    <li key={l.slug} className="flex justify-between"><span>{l.name} × {l.qty}</span><span>{formatNaira(l.priceKobo * l.qty)}</span></li>
+                  ))}
+                </ul>
+                <dl className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
+                  <Row label="Subtotal" value={formatNaira(subtotal)} />
+                  <Row label="Delivery" value={freeDelivery ? "Free" : formatNaira(fee)} />
+                </dl>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="space-y-12 md:space-y-14 lg:col-span-7">
         <Step n={1} title="Your details">
           <div className="grid gap-3 sm:grid-cols-2">
             <input name="email" type="email" required autoComplete="email" placeholder="Email address" className={`${field} sm:col-span-2`} onBlur={(e) => saveSession(e.currentTarget.form!)} />
@@ -223,7 +258,7 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
         </Step>
       </div>
 
-      <aside className="lg:col-span-5">
+      <aside className="hidden lg:col-span-5 lg:block">
         <div className="rounded-[32px] bg-paper p-7 lg:sticky lg:top-28 md:p-9">
           <h2 className="font-serif text-3xl">Your order</h2>
           <ul className="mt-6 space-y-4">
@@ -256,6 +291,20 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
           </p>
         </div>
       </aside>
+
+      {/* phones: the pay button lives in the thumb zone */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
+        {error && <p role="alert" className="mb-2 rounded-xl bg-[#f6e1d8] px-3 py-2 text-sm text-[#7a2e12]">{error}</p>}
+        <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] tracking-[0.14em] text-muted uppercase">Total</p>
+            <p className="font-serif text-2xl leading-none">{formatNaira(total)}</p>
+          </div>
+          <button type="submit" disabled={submitting || !zone} className="btn btn-dark pressable flex-1 disabled:opacity-60">
+            {submitting ? "Opening payment…" : "Pay securely"}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }

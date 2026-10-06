@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AddToBag } from "@/components/cart/add-to-bag";
 import { QtyStepper } from "@/components/cart/cart-drawer";
 import { DropIcon, LeafIcon, PlusIcon, RiderIcon } from "@/components/icons";
@@ -15,14 +15,25 @@ const silk = [0.22, 1, 0.36, 1] as const;
 export function ProductDetail({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [view, setView] = useState<"cutout" | "square">("cutout");
+  const buyRow = useRef<HTMLDivElement>(null);
+  const [showBar, setShowBar] = useState(false);
+
+  // the sticky buy bar appears once the main “Add to bag” scrolls out of view
+  useEffect(() => {
+    const el = buyRow.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setShowBar(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   return (
-    <section className="wrap grid gap-12 pt-32 pb-24 md:grid-cols-12 md:gap-10 md:pt-40">
+    <section className="wrap grid gap-8 pt-24 pb-16 md:grid-cols-12 md:gap-10 md:pt-40 md:pb-24">
       {/* gallery */}
       <div className="md:col-span-7">
         <div className="md:sticky md:top-28">
           <div
-            className="relative aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[36px]"
+            className="relative aspect-[5/6] overflow-hidden rounded-t-[999px] rounded-b-[36px] md:aspect-[4/5]"
             style={{ background: `linear-gradient(180deg, ${product.tint[0]}, ${product.tint[1]})` }}
           >
             <AnimatePresence mode="wait">
@@ -96,7 +107,7 @@ export function ProductDetail({ product }: { product: Product }) {
           ))}
         </ul>
 
-        <div className="mt-10 flex flex-wrap items-center gap-4">
+        <div ref={buyRow} className="mt-10 flex flex-wrap items-center gap-4">
           <QtyStepper value={qty} onChange={(n) => setQty(Math.max(1, n))} label={product.name} />
           <AddToBag product={product} qty={qty} className="flex-1" />
         </div>
@@ -131,6 +142,26 @@ export function ProductDetail({ product }: { product: Product }) {
           </Accordion>
         </div>
       </div>
+      <AnimatePresence>
+        {showBar && (
+          <motion.div
+            initial={{ y: 120, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 120, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 36 }}
+            className="fixed inset-x-3 bottom-tabbar z-30 mb-2 flex items-center gap-3 rounded-[22px] bg-darker/95 p-2.5 pl-3 text-paper shadow-float backdrop-blur-xl md:inset-x-auto md:right-6 md:bottom-6 md:mb-0 md:w-[420px]"
+          >
+            <span className="relative h-12 w-10 shrink-0 overflow-hidden rounded-xl" style={{ background: `linear-gradient(180deg, ${product.tint[0]}, ${product.tint[1]})` }}>
+              <Image src={product.cutout} alt="" fill sizes="40px" className="object-contain p-1" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-serif text-lg leading-tight">{product.name}</span>
+              <span className="text-xs text-paper/60">{formatNaira(product.priceKobo * qty)}{qty > 1 ? ` · ${qty} bottles` : ""}</span>
+            </span>
+            <AddToBag product={product} qty={qty} compact className="min-w-0 bg-paper px-5 py-3 text-ink before:bg-honey" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

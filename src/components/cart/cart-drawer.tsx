@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useDragControls, type PanInfo } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { DropMascot } from "@/components/drop-mascot";
 import { CloseIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { cartCount, cartSubtotal, useCart, MAX_QTY } from "@/lib/cart";
 import { formatNaira, type Product } from "@/lib/catalog";
+import { haptic, useIsMobile } from "@/lib/use-media";
 
 const silk = [0.22, 1, 0.36, 1] as const;
 
@@ -16,12 +17,18 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
   const panel = useRef<HTMLDivElement>(null);
   const [celebrate, setCelebrate] = useState(false);
   const lastPulse = useRef(pulse);
+  const mobile = useIsMobile();
+  const drag = useDragControls();
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.y > 110 || info.velocity.y > 600) setOpen(false);
+  };
 
   // Drop cheers for a moment after every add
   useEffect(() => {
     if (pulse === lastPulse.current) return;
     lastPulse.current = pulse;
     setCelebrate(true);
+    haptic(18);
     const t = window.setTimeout(() => setCelebrate(false), 2600);
     return () => window.clearTimeout(t);
   }, [pulse]);
@@ -69,13 +76,28 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
             aria-modal="true"
             aria-label="Your bag"
             data-lenis-prevent
-            className="absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col bg-paper outline-none sm:rounded-l-[28px] sm:shadow-float"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.8, ease: silk }}
+            className={
+              mobile
+                ? "absolute inset-x-0 bottom-0 flex max-h-[90dvh] flex-col rounded-t-[28px] bg-paper outline-none shadow-[0_-20px_60px_-20px_rgba(31,21,17,.45)]"
+                : "absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col bg-paper outline-none sm:rounded-l-[28px] sm:shadow-float"
+            }
+            initial={mobile ? { y: "100%" } : { x: "100%" }}
+            animate={mobile ? { y: 0 } : { x: 0 }}
+            exit={mobile ? { y: "100%" } : { x: "100%" }}
+            transition={mobile ? { type: "spring", stiffness: 380, damping: 38 } : { duration: 0.8, ease: silk }}
+            drag={mobile ? "y" : false}
+            dragControls={drag}
+            dragListener={false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0.05, bottom: 0.6 }}
+            onDragEnd={onDragEnd}
           >
-            <header className="flex items-center justify-between px-6 pt-6 pb-4 sm:px-8">
+            {mobile && (
+              <div className="cursor-grab touch-none pt-3 pb-1" onPointerDown={(e) => drag.start(e)} aria-hidden>
+                <div className="mx-auto h-1.5 w-11 rounded-full bg-ink/15" />
+              </div>
+            )}
+            <header className="flex items-center justify-between px-6 pt-3 pb-4 sm:px-8 md:pt-6" onPointerDown={(e) => mobile && drag.start(e)}>
               <h2 className="font-serif text-3xl">
                 Your bag {count > 0 && <span className="align-top text-sm font-sans text-muted">({count})</span>}
               </h2>
@@ -111,7 +133,7 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
               )}
             </AnimatePresence>
 
-            <div className="flex-1 overflow-y-auto px-6 sm:px-8">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 sm:px-8">
               {count === 0 ? (
                 <EmptyBag products={products} onAdd={(p) => add({ slug: p.slug, name: p.name, subtitle: p.subtitle, priceKobo: p.priceKobo, image: p.cutout, accent: p.accent })} />
               ) : (
@@ -153,7 +175,7 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
             </div>
 
             {count > 0 && (
-              <footer className="border-t border-line px-6 pt-5 pb-6 sm:px-8">
+              <footer className="border-t border-line px-6 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-8">
                 <label className="flex cursor-pointer items-center gap-3 text-sm text-ink-soft">
                   <input type="checkbox" checked={giftWrap} onChange={(e) => setGift(e.target.checked)} className="size-4 accent-amber" />
                   Gift-wrap this order and add a handwritten note
@@ -205,7 +227,7 @@ export function QtyStepper({ value, onChange, label }: { value: number; onChange
 
 function EmptyBag({ products, onAdd }: { products: Product[]; onAdd: (p: Product) => void }) {
   return (
-    <div className="flex h-full flex-col items-center pt-6 text-center">
+    <div className="flex h-full flex-col items-center pt-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-center md:pt-6">
       <DropMascot mood="waiting" size={150} label="Drop is waiting for something to hold" />
       <h3 className="mt-6 font-serif text-3xl">Your bag is resting.</h3>
       <p className="mt-2 max-w-xs text-sm text-ink-soft">
