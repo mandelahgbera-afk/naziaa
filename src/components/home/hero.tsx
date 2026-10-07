@@ -9,9 +9,11 @@ import { HeroVideo } from "@/components/hero/hero-video";
 import { RiseWords } from "@/components/motion";
 import type { Product } from "@/lib/catalog";
 import type { HeroMedia } from "@/lib/data";
+import { splitEmphasis, type Copy } from "@/lib/content";
 
 
-export function Hero({ media, products }: { media: HeroMedia; products: Product[] }) {
+export function Hero({ media, products, c }: { media: HeroMedia; products: Product[]; c: Copy }) {
+  const headline = splitEmphasis(c["home.hero.headline"]);
   const reduce = useReducedMotion();
   const { scrollY } = useScroll();
   const contentY = useTransform(scrollY, [0, 900], [0, 180]);
@@ -54,17 +56,17 @@ export function Hero({ media, products }: { media: HeroMedia; products: Product[
       <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center">
         <motion.div className="relative z-10 md:col-span-7" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
           <p className="eyebrow fade-up text-paper/75" style={{ ["--d" as string]: "0.2s" }}>
-            Botanical hair &amp; scalp oils · Lagos
+            {c["home.hero.eyebrow"]}
           </p>
           <h1 className="display mt-6 text-paper">
-            <RiseWords text="Healthy hair starts from the root." italic={["root"]} immediate delay={0.35} stagger={0.09} />
+            <RiseWords text={headline.plain} italic={headline.italic} immediate delay={0.35} stagger={0.09} />
           </h1>
           <p className="fade-up mt-5 max-w-md text-[1rem] text-paper/80 md:mt-7 md:text-[1.08rem]" style={{ ["--d" as string]: "0.9s" }}>
-            Small-batch, cold-infused botanicals — formulated to treat shedding at its source, not the surface.
+            {splitEmphasis(c["home.hero.intro"]).plain}
           </p>
           <div className="fade-up mt-8 flex flex-wrap gap-3 md:mt-10" style={{ ["--d" as string]: "1.1s" }}>
-            <Link href="/shop" className="btn flex-1 bg-paper px-5 text-ink before:bg-honey sm:flex-none sm:px-8">Shop the oils</Link>
-            <Link href="/ritual" className="btn btn-light flex-1 px-5 sm:flex-none sm:px-8">The ritual</Link>
+            <Link href="/shop" className="btn flex-1 bg-paper px-5 text-ink before:bg-honey sm:flex-none sm:px-8">{c["home.hero.cta1"]}</Link>
+            <Link href="/ritual" className="btn btn-light flex-1 px-5 sm:flex-none sm:px-8">{c["home.hero.cta2"]}</Link>
           </div>
         </motion.div>
 

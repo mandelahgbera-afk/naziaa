@@ -7,7 +7,7 @@ import { Pillars } from "@/components/home/sections";
 import { Reveal } from "@/components/motion";
 import { ProductDetail } from "@/components/product/product-detail";
 import { formatNaira, PRODUCTS } from "@/lib/catalog";
-import { getProduct, getProducts } from "@/lib/data";
+import { getCopy, getProduct, getProducts } from "@/lib/data";
 
 // Admin edits and paid orders refresh these instantly; this is only the safety net
 export const revalidate = 300;
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
 
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
-  const [product, all] = await Promise.all([getProduct(slug), getProducts()]);
+  const [product, all, c] = await Promise.all([getProduct(slug), getProducts(), getCopy()]);
   if (!product) notFound();
   const others = all.filter((p) => p.slug !== product.slug);
 
@@ -70,12 +70,12 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <ProductDetail product={product} />
-      <Pillars />
+      <ProductDetail product={product} delivery={c["product.delivery"]} inside={c["product.inside"]} />
+      <Pillars c={c} />
       {others.length > 0 && (
         <section className="wrap py-20 md:py-28" aria-labelledby="pair-title">
           <p className="eyebrow">Complete the ritual</p>
-          <h2 id="pair-title" className="title mt-4">Pairs beautifully with</h2>
+          <h2 id="pair-title" className="title mt-4">{c["product.pair"]}</h2>
           <div className="mt-12 grid gap-8 md:grid-cols-2">
             {others.map((p) => (
               <Reveal key={p.slug} className="flex items-center gap-6 rounded-[28px] bg-paper p-6">

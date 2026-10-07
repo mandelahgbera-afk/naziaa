@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Botanical } from "@/components/botanicals";
-import { Reveal, RiseWords } from "@/components/motion";
-import { INGREDIENTS } from "@/lib/catalog";
+import { Em } from "@/components/em";
+import { Title } from "@/components/home/sections";
+import { Reveal } from "@/components/motion";
+import { ingredientsWithCopy } from "@/lib/catalog";
+import { getCopy } from "@/lib/data";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/ingredients" },
@@ -17,15 +22,17 @@ const READ_MORE: Record<string, { href: string; label: string }> = {
   bhringraj: { href: "/journal/ayurvedic-history", label: "The King of Hair, in history" },
 };
 
-export default function IngredientsPage() {
+export default async function IngredientsPage() {
+  const c = await getCopy();
+  const INGREDIENTS = ingredientsWithCopy(c);
   return (
     <>
       <section className="wrap pt-28 pb-14 md:pt-48 md:pb-20">
-        <p className="eyebrow">Ingredient library</p>
+        <p className="eyebrow">{c["home.ingredients.eyebrow"]}</p>
         <h1 className="display mt-6 max-w-5xl">
-          <RiseWords text="Four botanicals, zero fillers." italic={["zero", "fillers."]} immediate />
+          <Title text={c["home.ingredients.title"]} immediate />
         </h1>
-        <p className="lede mt-8">Every formula is built from plants with a long memory — chosen for what they do at the root, and nothing added for show.</p>
+        <p className="lede mt-8"><Em text={c["ingredients.lede"]} /></p>
       </section>
 
       {INGREDIENTS.map((ing, i) => (

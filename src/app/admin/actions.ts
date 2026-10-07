@@ -6,10 +6,42 @@ import { requireOwner, requireStaff } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { createDirectUpload } from "@/lib/mux";
 import { notifyStatus } from "@/lib/orders";
+import { isWhatsApp, toWhatsApp } from "@/lib/social";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Result = { ok: true; message?: string } | { ok: false; error: string };
-const fail = (e: unknown): Result => ({ ok: false, error: e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "Something went wrong" });
+/* Every failure becomes one plain sentence she can act on — never raw JSON or database jargon. */
+const FIELD_NAMES: Record<string, string> = {
+  name: "Name", phone: "Phone", email: "Email", password: "Password", zoneId: "Home zone", vehicle: "Vehicle",
+  subtitle: "Subtitle", tagline: "Tagline", description: "Description", priceNaira: "Price", sizeMl: "Size",
+  lowStockThreshold: "Low-stock alert", code: "Batch code", infusedOn: "Infused date", expiresOn: "Best-before date", qty: "Bottles",
+  title: "Title", tint: "Tint", startsAt: "Show from", endsAt: "Until", priority: "Priority", mobilePlaybackId: "Phone cut",
+  announcements: "Announcements", freeDeliveryThresholdNaira: "Free delivery amount", whatsappNumber: "WhatsApp number",
+  contactEmail: "Contact email", instagram: "Instagram", tiktok: "TikTok", neighbourhoods: "Neighbourhoods", feeNaira: "Delivery fee",
+};
+
+function humanIssue(issue: z.core.$ZodIssue) {
+  const field = FIELD_NAMES[String(issue.path[0] ?? "")] ?? "This field";
+  // our own messages are already written for people
+  if (issue.code === "custom" || /[a-z] /.test(issue.message) && !/^(Invalid|Too |Expected)/.test(issue.message)) return issue.message;
+  switch (issue.code) {
+    case "too_small": return `${field} is too short.`;
+    case "too_big": return `${field} is too long.`;
+    case "invalid_type": return `${field} is missing or not a valid value.`;
+    case "invalid_format": return `${field} isn’t in the right format.`;
+    default: return `Please check ${field.toLowerCase()}.`;
+  }
+}
+
+const fail = (e: unknown): Result => {
+  if (e instanceof z.ZodError) return { ok: false, error: humanIssue(e.issues[0]) };
+  const msg = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "";
+  if (/row-level security|permission denied/i.test(msg)) return { ok: false, error: "Your account doesn’t have permission to change this." };
+  if (/duplicate key|already exists|already been registered/i.test(msg)) return { ok: false, error: "That already exists — try a different name, code or email." };
+  if (/fetch failed|network|timeout/i.test(msg)) return { ok: false, error: "Couldn’t reach the server — check your connection and try again." };
+  if (/JWT|session|not authenticated/i.test(msg)) return { ok: false, error: "You’ve been signed out. Please sign in again." };
+  return { ok: false, error: msg || "Something went wrong — please try again." };
+};
 
 async function audit(actor: string, action: string, entity: string, entityId: string | null, detail?: unknown) {
   await supabaseAdmin().from("audit_log").insert({ actor, action, entity, entity_id: entityId, detail: detail ?? null });
@@ -287,10 +319,16 @@ const SettingsInput = z
   .object({
     announcements: z.array(z.string().trim().min(1).max(90, "Keep each announcement under 90 characters")).max(6),
     freeDeliveryThresholdNaira: z.number().int().min(0).nullable(),
-    whatsappNumber: z.string().trim().regex(/^d{8,15}$/, "WhatsApp number: digits with country code, e.g. 2348012345678").nullable(),
+    whatsappNumber: z
+      .string()
+      .nullable()
+      .refine((v) => !v || !v.trim() || isWhatsApp(toWhatsApp(v)), "That doesn’t look like a phone number — try 0803 123 4567.")
+      .transform((v) => (v && v.trim() ? toWhatsApp(v) : null)),
     contactEmail: z.string().trim().toLowerCase().email("Enter a valid contact email"),
     instagram: z.string().trim().url("Instagram must be a full link, e.g. https://www.instagram.com/nazia.botanics/").or(z.literal("")),
     tiktok: z.string().trim().url("TikTok must be a full link, e.g. https://www.tiktok.com/@nazia_botanics").or(z.literal("")),
+    nudgeEnabled: z.boolean(),
+    nudgeDelaySeconds: z.number().int().min(10).max(300),
   })
   .partial();
 
@@ -304,10 +342,12 @@ export async function saveStorefrontSettings(input: z.input<typeof SettingsInput
     const value: Record<string, unknown> = { ...((current?.value as Record<string, unknown>) ?? {}) };
     if (d.announcements !== undefined) value.announcements = d.announcements;
     if (d.freeDeliveryThresholdNaira !== undefined) value.freeDeliveryThresholdKobo = d.freeDeliveryThresholdNaira ? d.freeDeliveryThresholdNaira * 100 : null;
-    if (d.whatsappNumber !== undefined) value.whatsappNumber = d.whatsappNumber;
+    if (d.whatsappNumber !== undefined) value.whatsappNumber = d.whatsappNumber || null;
     if (d.contactEmail !== undefined) value.contactEmail = d.contactEmail;
     if (d.instagram !== undefined) value.instagram = d.instagram;
     if (d.tiktok !== undefined) value.tiktok = d.tiktok;
+    if (d.nudgeEnabled !== undefined) value.nudgeEnabled = d.nudgeEnabled;
+    if (d.nudgeDelaySeconds !== undefined) value.nudgeDelaySeconds = d.nudgeDelaySeconds;
     const { error } = await supabase.from("site_settings").upsert({ key: "storefront", value, is_public: true });
     if (error) throw error;
     await audit(user.id, "settings.storefront", "site_settings", "storefront", d);
@@ -406,32 +446,99 @@ export async function deleteZone(id: string): Promise<Result> {
 }
 
 // ─── Newsletter ──────────────────────────────────────────────────────────────
-export async function sendNewsletter(subject: string, bodyText: string, testOnly: boolean): Promise<Result> {
+export type NewsletterDraft = {
+  subject: string;
+  preheader?: string;
+  body: string;
+  tip?: string;
+  featuredSlug?: string | null;
+  ctaLabel?: string;
+  ctaUrl?: string;
+};
+
+/** Builds the exact email subscribers receive (used by preview, test and send). */
+async function buildNewsletter(d: NewsletterDraft) {
+  const [{ getProducts, getSettings }, { formatNaira }] = await Promise.all([import("@/lib/data"), import("@/lib/catalog")]);
+  const [products, settings] = await Promise.all([getProducts(), getSettings()]);
+  const p = d.featuredSlug ? products.find((x) => x.slug === d.featuredSlug) : null;
+  return {
+    subject: d.subject.trim(),
+    preheader: d.preheader?.trim() || undefined,
+    body: d.body,
+    tip: d.tip,
+    featured: p ? { name: p.name, tagline: p.tagline, price: formatNaira(p.priceKobo), slug: p.slug, tint: p.tint } : null,
+    cta: d.ctaLabel?.trim() && d.ctaUrl?.trim() ? { label: d.ctaLabel.trim(), url: d.ctaUrl.trim() } : null,
+    socials: { instagram: settings.instagram, tiktok: settings.tiktok, whatsapp: settings.whatsappNumber },
+  };
+}
+
+export async function previewNewsletter(d: NewsletterDraft): Promise<{ ok: true; html: string } | { ok: false; error: string }> {
+  try {
+    await requireStaff();
+    const { newsletterEmail } = await import("@/lib/newsletter");
+    const input = await buildNewsletter({ ...d, subject: d.subject || "Your subject line", body: d.body || "Start writing — your words appear here as subscribers will see them." });
+    return { ok: true, html: newsletterEmail(input, "#") };
+  } catch (e) {
+    const r = fail(e);
+    return { ok: false, error: r.ok ? "" : r.error };
+  }
+}
+
+export async function sendNewsletter(d: NewsletterDraft, testOnly: boolean): Promise<Result> {
   try {
     const { user } = testOnly ? await requireStaff() : await requireOwner();
-    if (subject.trim().length < 3 || bodyText.trim().length < 20) throw new Error("Add a subject and a few lines of copy.");
-    const { newsletterEmail, unsubscribeUrl } = await import("@/lib/newsletter");
+    if (d.subject.trim().length < 3 || d.body.trim().length < 20) throw new Error("Add a subject and a few lines of copy.");
+    const { newsletterEmail, unsubscribeUrl, plainSubject } = await import("@/lib/newsletter");
+    const input = await buildNewsletter(d);
 
     if (testOnly) {
-      const html = newsletterEmail(subject, bodyText, unsubscribeUrl(user.email!));
-      await sendEmail({ to: user.email!, subject: `[Test] ${subject}`, html, tag: "newsletter_test" });
+      const html = newsletterEmail(input, unsubscribeUrl(user.email!));
+      await sendEmail({ to: user.email!, subject: `[Test] ${plainSubject(input.subject)}`, html, tag: "newsletter_test" });
       return { ok: true, message: `Test sent to ${user.email}` };
     }
 
     const { data: subs, error } = await supabaseAdmin().from("newsletter_subscribers").select("email").eq("status", "subscribed");
     if (error) throw error;
     let sent = 0;
-    for (const s of subs ?? []) {
-      const unsub = unsubscribeUrl(s.email);
-      const html = newsletterEmail(subject, bodyText, unsub);
+    for (const sub of subs ?? []) {
+      const unsub = unsubscribeUrl(sub.email);
+      const html = newsletterEmail(input, unsub);
       // one-click unsubscribe headers: required by Gmail and Yahoo for bulk senders
-      const r = await sendEmail({ to: s.email, subject, html, tag: "newsletter", headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
+      const r = await sendEmail({ to: sub.email, subject: plainSubject(input.subject), html, tag: "newsletter", headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
       if (!r.skipped && !r.error) sent++;
       // stay under the email provider rate limit
       await new Promise((res) => setTimeout(res, 550));
     }
-    await audit(user.id, "newsletter.send", "newsletter", null, { subject, recipients: subs?.length ?? 0, sent });
+    await audit(user.id, "newsletter.send", "newsletter", null, { subject: plainSubject(input.subject), recipients: subs?.length ?? 0, sent });
     return { ok: true, message: `Sent to ${sent} of ${subs?.length ?? 0} subscribers.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ─── Site words ──────────────────────────────────────────────────────────────
+/** Saves edited website text. Empty or unchanged-from-original values fall back to the original. */
+export async function saveSiteWords(changes: Record<string, string>): Promise<Result> {
+  try {
+    const { supabase, user } = await requireStaff();
+    const { FIELD_BY_KEY } = await import("@/lib/content");
+    const { data: current } = await supabase.from("site_settings").select("value").eq("key", "content").maybeSingle();
+    const value: Record<string, string> = { ...((current?.value as Record<string, string>) ?? {}) };
+    let n = 0;
+    for (const [key, raw] of Object.entries(changes)) {
+      const field = FIELD_BY_KEY.get(key);
+      if (!field) continue;
+      const text = String(raw ?? "").replace(/\r\n/g, "\n").trim();
+      if (text.length > (field.max ?? 1000)) throw new Error(`“${field.label}” is too long (max ${field.max} characters).`);
+      if (!text || text === field.default) delete value[key];
+      else value[key] = text;
+      n++;
+    }
+    const { error } = await supabase.from("site_settings").upsert({ key: "content", value, is_public: true });
+    if (error) throw error;
+    await audit(user.id, "content.save", "site_settings", "content", { keys: Object.keys(changes) });
+    revalidatePath("/", "layout");
+    return { ok: true, message: `${n} change${n === 1 ? "" : "s"} saved — live on the site within a minute.` };
   } catch (e) {
     return fail(e);
   }

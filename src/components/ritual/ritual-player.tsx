@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DropMascot } from "@/components/drop-mascot";
 import { ArrowIcon, BreathIcon } from "@/components/icons";
+import { useCopy } from "@/components/copy";
 
 /* Guided Siro Abhyanga. Phases: intro → warm → breathe (3 breaths) → 4 timed steps → done.
    Optional ambient tone generated with Web Audio (no audio files to download).
@@ -105,6 +106,7 @@ export function RitualPlayer() {
   const [inhale, setInhale] = useState(true);
   const [week, setWeek] = useState(0);
   const ambient = useAmbient();
+  const c = useCopy();
   const wake = useRef<WakeLockSentinel | null>(null);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -174,8 +176,8 @@ export function RitualPlayer() {
             {phase === "intro" && (
               <Panel key="intro">
                 <p className="eyebrow text-paper/60">Siro Abhyanga · 5 minutes</p>
-                <h1 className="mt-4 font-serif text-[clamp(2.6rem,6vw,4.6rem)] leading-[1]">Your five unhurried minutes.</h1>
-                <p className="mx-auto mt-5 max-w-md text-paper/70">Find somewhere quiet. Have your oil within reach. We’ll guide every breath and every movement.</p>
+                <h1 className="mt-4 font-serif text-[clamp(2.6rem,6vw,4.6rem)] leading-[1]">{c["ritual.title"]}</h1>
+                <p className="mx-auto mt-5 max-w-md text-paper/70">{c["ritual.body"]}</p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                   <button type="button" className="btn bg-paper text-ink before:bg-honey" onClick={() => setPhase("warm")}>Begin the ritual</button>
                   <button type="button" className="btn btn-light" onClick={ambient.toggle} aria-pressed={ambient.on}>
@@ -222,7 +224,7 @@ export function RitualPlayer() {
             {phase === "done" && (
               <Panel key="done">
                 <div className="flex justify-center"><DropMascot mood="happy" size={110} /></div>
-                <h2 className="mt-4 font-serif text-5xl">Ritual complete.</h2>
+                <h2 className="mt-4 font-serif text-5xl">{c["ritual.done"]}</h2>
                 <p className="mx-auto mt-4 max-w-sm text-paper/70">
                   {week >= 3 ? "Three this week — exactly what your roots need." : `${week} of 3 this week. Consistency is the key.`}
                 </p>

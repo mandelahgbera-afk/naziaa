@@ -1,15 +1,15 @@
 import { Hero } from "@/components/home/hero";
 import { IngredientRail } from "@/components/home/ingredient-rail";
 import { JournalTeaser, Pillars, ProductShowcase, RitualTeaser, SocialBand, Statement, TrustMarquee } from "@/components/home/sections";
-import { INGREDIENTS } from "@/lib/catalog";
-import { getHeroMedia, getProducts, getSettings } from "@/lib/data";
+import { ingredientsWithCopy } from "@/lib/catalog";
+import { getCopy, getHeroMedia, getProducts, getSettings } from "@/lib/data";
 import { ARTICLES } from "@/lib/journal";
 
 // Admin edits and paid orders refresh these instantly; this is only the safety net
 export const revalidate = 300;
 
 export default async function Home() {
-  const [products, media, settings] = await Promise.all([getProducts(), getHeroMedia(), getSettings()]);
+  const [products, media, settings, c] = await Promise.all([getProducts(), getHeroMedia(), getSettings(), getCopy()]);
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const jsonLd = [
@@ -43,15 +43,15 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <Hero media={media} products={products} />
-      <TrustMarquee />
-      <Statement />
-      <ProductShowcase products={products} />
-      <Pillars />
-      <IngredientRail ingredients={INGREDIENTS} />
-      <RitualTeaser />
-      <JournalTeaser articles={ARTICLES} />
-      <SocialBand instagram={settings.instagram} tiktok={settings.tiktok} />
+      <Hero media={media} products={products} c={c} />
+      <TrustMarquee c={c} />
+      <Statement c={c} />
+      <ProductShowcase products={products} c={c} />
+      <Pillars c={c} />
+      <IngredientRail ingredients={ingredientsWithCopy(c)} eyebrow={c["home.ingredients.eyebrow"]} title={c["home.ingredients.title"]} />
+      <RitualTeaser c={c} />
+      <JournalTeaser articles={ARTICLES} c={c} />
+      <SocialBand instagram={settings.instagram} tiktok={settings.tiktok} c={c} />
     </>
   );
 }

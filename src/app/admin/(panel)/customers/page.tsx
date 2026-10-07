@@ -3,6 +3,7 @@ import { Card, Empty, PageHead } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
 import { adminHref } from "@/lib/admin-path";
+import { waLink } from "@/lib/social";
 import { daysSince } from "@/lib/time";
 
 const SEGMENTS = [
@@ -65,7 +66,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
                 </div>
                 <p className="text-xs text-muted">{c.count} order{c.count === 1 ? "" : "s"} · {c.days === null ? "no orders yet" : c.days === 0 ? "ordered today" : `last ${c.days}d ago`}</p>
                 <div className="mt-2 flex gap-2">
-                  {c.phone && <a className="pressable rounded-full bg-cream px-3 py-1.5 text-xs" href={`https://wa.me/${c.phone.replace(/D/g, "").replace(/^0/, "234")}`} target="_blank" rel="noreferrer">WhatsApp</a>}
+                  {c.phone && <a className="pressable rounded-full bg-cream px-3 py-1.5 text-xs" href={waLink(c.phone)} target="_blank" rel="noreferrer">WhatsApp</a>}
                   <a className="pressable rounded-full bg-cream px-3 py-1.5 text-xs" href={`mailto:${c.email}`}>Email</a>
                 </div>
               </li>

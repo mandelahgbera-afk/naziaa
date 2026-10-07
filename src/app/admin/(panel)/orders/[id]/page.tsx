@@ -5,6 +5,7 @@ import { Card, PageHead, StatusBadge } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
 import { adminHref } from "@/lib/admin-path";
+import { waLink } from "@/lib/social";
 import { NEXT_STATUSES, STATUS_LABEL } from "@/lib/order-status";
 
 export default async function OrderDetail({ params }: PageProps<"/admin/orders/[id]">) {
@@ -40,7 +41,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
       <div className="mb-4 space-y-4 xl:hidden">
         <div className="grid grid-cols-3 gap-2">
           <a href={`tel:${o.phone}`} className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Call</a>
-          <a href={`https://wa.me/${o.phone.replace(/D/g, "").replace(/^0/, "234")}`} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">WhatsApp</a>
+          <a href={waLink(o.phone)} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">WhatsApp</a>
           {mapLink ? <a href={mapLink} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Map</a> : <a href={`mailto:${o.email}`} className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Email</a>}
         </div>
         <OrderActions orderId={o.id} status={o.status} next={NEXT_STATUSES[o.status] ?? []} riders={riders ?? []} riderId={o.rider_id} />

@@ -153,3 +153,13 @@ export function formatNaira(kobo: number) {
     maximumFractionDigits: 0,
   }).format(kobo / 100);
 }
+
+/** The four botanicals with any role/description/origin edits from the Studio applied. */
+export function ingredientsWithCopy(c: Record<string, string>): Ingredient[] {
+  return INGREDIENTS.map((i) => ({
+    ...i,
+    role: c[`ingredient.${i.slug}.role`] || i.role,
+    body: c[`ingredient.${i.slug}.body`] || i.body,
+    origin: c[`ingredient.${i.slug}.origin`] || i.origin,
+  }));
+}

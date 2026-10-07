@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChangePasswordForm } from "@/components/admin/change-password";
 import { DeliveryManager, type Zone } from "@/components/admin/delivery-manager";
-import { AnnouncementsForm, ContactForm, FreeDeliveryForm } from "@/components/admin/settings-forms";
+import { AnnouncementsForm, ContactForm, FreeDeliveryForm, NudgeForm } from "@/components/admin/settings-forms";
 import { Card, PageHead } from "@/components/admin/ui";
 import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
@@ -66,6 +66,10 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
             <Card>
               <p className="eyebrow mb-4">Free delivery</p>
               <FreeDeliveryForm threshold={v.freeDeliveryThresholdKobo ? v.freeDeliveryThresholdKobo / 100 : null} productPriceKobo={products[0]?.priceKobo ?? 0} />
+            </Card>
+            <Card>
+              <p className="eyebrow mb-4">Newsletter invitation</p>
+              <NudgeForm enabled={defaults.nudgeEnabled} delaySeconds={defaults.nudgeDelaySeconds} />
             </Card>
           </div>
         )}

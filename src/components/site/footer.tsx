@@ -1,18 +1,20 @@
 import Link from "next/link";
 import type { Product } from "@/lib/catalog";
 import type { StorefrontSettings } from "@/lib/data";
+import type { Copy } from "@/lib/content";
+import { Em } from "@/components/em";
 import { NewsletterForm } from "./newsletter-form";
 
-export function Footer({ products, settings }: { products: Product[]; settings: StorefrontSettings }) {
+export function Footer({ products, settings, c }: { products: Product[]; settings: StorefrontSettings; c: Copy }) {
   const year = new Date().getFullYear();
   return (
     <footer className="relative overflow-hidden bg-darker pb-tabbar text-paper md:pb-0">
       <div className="wrap grid gap-12 pt-16 pb-10 md:grid-cols-12 md:gap-16 md:pt-24 md:pb-12">
         <div className="md:col-span-5">
-          <p className="eyebrow text-paper/60">The weekly ritual</p>
-          <h2 className="title mt-4 max-w-md text-paper">Nourish your scalp, protect your ends.</h2>
+          <p className="eyebrow text-paper/60">{c["footer.newsletter.eyebrow"]}</p>
+          <h2 className="title mt-4 max-w-md text-paper"><Em text={c["footer.newsletter.title"]} /></h2>
           <p className="mt-4 max-w-sm text-paper/70">
-            One calm email a week: wellness routines, new batches before anyone else, and the science behind every drop.
+            <Em text={c["footer.newsletter.body"]} />
           </p>
           <NewsletterForm />
         </div>
@@ -52,8 +54,8 @@ export function Footer({ products, settings }: { products: Product[]; settings: 
       </div>
 
       <div className="wrap flex flex-col justify-between gap-3 border-t border-paper/10 py-6 text-xs text-paper/50 sm:flex-row">
-        <p>© {year} Nazia Botanics. Handmade in small batches in Lagos.</p>
-        <p>Cosmetic products — patch-test before first use.</p>
+        <p>© {year} Nazia Botanics. {c["footer.made"]}</p>
+        <p>{c["footer.note"]}</p>
       </div>
     </footer>
   );

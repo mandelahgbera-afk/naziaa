@@ -12,7 +12,7 @@ import { formatNaira, type Product } from "@/lib/catalog";
 
 const silk = [0.22, 1, 0.36, 1] as const;
 
-export function ProductDetail({ product }: { product: Product }) {
+export function ProductDetail({ product, delivery, inside }: { product: Product; delivery: string; inside: string }) {
   const [qty, setQty] = useState(1);
   const [view, setView] = useState<"cutout" | "square">("cutout");
   const buyRow = useRef<HTMLDivElement>(null);
@@ -114,7 +114,7 @@ export function ProductDetail({ product }: { product: Product }) {
 
         <p className="mt-5 flex items-center gap-3 text-sm text-ink-soft">
           <RiderIcon size={20} className="shrink-0 text-amber" />
-          Lagos orders arrive with our own riders; nationwide delivery from Lagos.
+          {delivery}
         </p>
 
         <div className="mt-10 divide-y divide-line border-y border-line">
@@ -131,7 +131,7 @@ export function ProductDetail({ product }: { product: Product }) {
           </Accordion>
           <Accordion title="What’s inside">
             <p className="text-ink-soft">
-              Botanicals only — no fillers, no synthetic fragrance. Read about each one in the{" "}
+              {inside} Read about each one in the{" "}
               <Link href="/ingredients" className="underline decoration-line underline-offset-4 hover:decoration-ink">ingredient library</Link>.
             </p>
           </Accordion>

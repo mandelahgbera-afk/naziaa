@@ -1,9 +1,11 @@
 import { NewsletterComposer } from "@/components/admin/newsletter-composer";
 import { Card, PageHead, Stat } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
+import { getProducts } from "@/lib/data";
 
 export default async function NewsletterPage() {
   const { supabase, profile } = await requireStaff();
+  const products = await getProducts();
   const [{ count: subscribed }, { count: unsub }, { data: recent }, { data: sends }] = await Promise.all([
     supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }).eq("status", "subscribed"),
     supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }).eq("status", "unsubscribed"),
@@ -19,11 +21,10 @@ export default async function NewsletterPage() {
         <Stat label="Unsubscribed" value={unsub ?? 0} />
         <Stat label="Campaigns sent" value={sends?.length ?? 0} hint="most recent five shown below" />
       </div>
-      <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <NewsletterComposer canSend={profile.role === "owner"} />
-        </Card>
-        <div className="space-y-4">
+      <Card className="mt-4">
+        <NewsletterComposer canSend={profile.role === "owner"} products={products.map((p) => ({ slug: p.slug, name: p.name }))} subscribers={subscribed ?? 0} />
+      </Card>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Card>
             <p className="eyebrow mb-3">Newest subscribers</p>
             <ul className="space-y-2 text-sm">
@@ -43,7 +44,6 @@ export default async function NewsletterPage() {
               {!sends?.length && <li className="text-muted">Nothing sent yet.</li>}
             </ul>
           </Card>
-        </div>
       </div>
     </>
   );

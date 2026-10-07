@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ClearBag } from "@/components/cart/clear-bag";
 import { DropMascot } from "@/components/drop-mascot";
 import { verifyByReference, verifyTransaction } from "@/lib/flutterwave";
-import { getSettings } from "@/lib/data";
+import { getCopy, getSettings } from "@/lib/data";
 import { markOrderPaid } from "@/lib/orders";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -37,7 +37,7 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
     }
   }
 
-  const { contactEmail } = await getSettings();
+  const [{ contactEmail }, c] = await Promise.all([getSettings(), getCopy()]);
 
   return (
     <section className="wrap flex min-h-[85svh] flex-col items-center justify-center pt-32 pb-20 text-center">
@@ -46,8 +46,8 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
           <ClearBag />
           <DropMascot mood="happy" size={150} />
           <p className="eyebrow mt-8">Order {txRef}</p>
-          <h1 className="title mt-3">Thank you. Your ritual is on its way.</h1>
-          <p className="lede mx-auto mt-5">A confirmation with your delivery code is in your inbox. We’ll tell you the moment a rider sets off.</p>
+          <h1 className="title mt-3">{c["checkout.thanks.title"]}</h1>
+          <p className="lede mx-auto mt-5">{c["checkout.thanks.body"]}</p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             {tracking && <Link href={tracking} className="btn btn-dark">Track your order</Link>}
             <Link href="/ritual" className="btn btn-ghost">Learn the ritual</Link>

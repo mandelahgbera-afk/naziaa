@@ -1,17 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AddToBag } from "@/components/cart/add-to-bag";
+import { Em } from "@/components/em";
 import { BreathIcon, HandsIcon, LeafIcon, RootIcon, ArrowIcon } from "@/components/icons";
 import { Reveal, RiseWords, ScrollInk } from "@/components/motion";
 import { JournalCover } from "@/components/journal-cover";
 import { MobileRail } from "@/components/mobile/mobile-rail";
 import { ProductArchRail } from "./product-arch-rail";
-import { formatNaira, PILLARS, TRUST, type Product } from "@/lib/catalog";
+import { formatNaira, type Product } from "@/lib/catalog";
+import { lines, splitEmphasis, type Copy } from "@/lib/content";
 import type { Article } from "@/lib/journal";
 import { handleFrom } from "@/lib/social";
 
-export function TrustMarquee() {
-  const row = [...TRUST, ...TRUST];
+/** An animated heading whose *starred* words are italic. */
+export function Title({ text, immediate }: { text: string; immediate?: boolean }) {
+  const { plain, italic } = splitEmphasis(text);
+  return <RiseWords text={plain} italic={italic} immediate={immediate} />;
+}
+
+const plain = (t: string) => splitEmphasis(t).plain;
+
+export function TrustMarquee({ c }: { c: Copy }) {
+  const items = lines(c["home.trust"]);
+  const row = [...items, ...items];
   return (
     <section aria-label="What goes into every bottle" className="overflow-hidden border-y border-line py-6">
       <div className="flex w-max animate-marquee gap-12 whitespace-nowrap motion-reduce:animate-none">
@@ -26,29 +37,26 @@ export function TrustMarquee() {
   );
 }
 
-export function Statement() {
+export function Statement({ c }: { c: Copy }) {
   return (
     <section className="wrap py-20 md:py-40">
-      <p className="eyebrow">The why</p>
-      <ScrollInk
-        className="mt-8 max-w-5xl font-serif text-[clamp(2rem,4.4vw,3.9rem)] leading-[1.12] tracking-[-0.01em]"
-        text="We believe hair growth starts with a calm nervous system. So we treat the stress that causes shedding — at the source, not the surface."
-      />
+      <p className="eyebrow">{c["home.why.eyebrow"]}</p>
+      <ScrollInk className="mt-8 max-w-5xl font-serif text-[clamp(2rem,4.4vw,3.9rem)] leading-[1.12] tracking-[-0.01em]" text={plain(c["home.why.statement"])} />
     </section>
   );
 }
 
-export function ProductShowcase({ products }: { products: Product[] }) {
+export function ProductShowcase({ products, c }: { products: Product[]; c: Copy }) {
   return (
     <section id="shop" className="wrap pb-20 md:pb-40" aria-labelledby="shop-title">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <p className="eyebrow">The oils</p>
+          <p className="eyebrow">{c["home.oils.eyebrow"]}</p>
           <h2 id="shop-title" className="title mt-4">
-            <RiseWords text="Two oils. A whole ritual." italic={["ritual"]} />
+            <Title text={c["home.oils.title"]} />
           </h2>
         </div>
-        <p className="lede hidden md:block md:max-w-sm">Each bottle is blended by hand in small batches, then shipped with the 5-minute ritual guide.</p>
+        <p className="lede hidden md:block md:max-w-sm"><Em text={c["home.oils.lede"]} /></p>
       </div>
 
       <div className="mt-4">
@@ -99,18 +107,19 @@ export function ProductShowcase({ products }: { products: Product[] }) {
 
 const PILLAR_ICONS = [BreathIcon, RootIcon, HandsIcon];
 
-export function Pillars() {
+export function Pillars({ c }: { c: Copy }) {
+  const pillars = [1, 2, 3].map((n) => ({ n: `0${n}`, title: c[`pillar.${n}.title`], body: c[`pillar.${n}.body`] }));
   return (
     <section className="relative overflow-hidden bg-dark py-20 text-paper md:py-40" aria-labelledby="pillars-title">
       <div className="pointer-events-none absolute -top-40 -right-40 size-[38rem] rounded-full bg-amber/30 blur-[120px]" />
       <div className="wrap relative">
-        <p className="eyebrow text-paper/60">Beyond the bottle</p>
+        <p className="eyebrow text-paper/60">{c["home.pillars.eyebrow"]}</p>
         <h2 id="pillars-title" className="title mt-4 max-w-3xl text-paper">
-          <RiseWords text="A holistic approach to hair that grows." italic={["grows."]} />
+          <Title text={c["home.pillars.title"]} />
         </h2>
         <div className="mt-10">
-          <MobileRail tone="dark" itemClass="w-[78vw]" labels={PILLARS.map((p) => p.title)}>
-            {PILLARS.map((p, i) => (
+          <MobileRail tone="dark" itemClass="w-[78vw]" labels={pillars.map((p) => p.title)}>
+            {pillars.map((p, i) => (
               <div key={p.n} className="h-full rounded-[26px] border border-paper/10 bg-paper/[0.04] p-6">
                 <PillarBody p={p} i={i} />
               </div>
@@ -118,7 +127,7 @@ export function Pillars() {
           </MobileRail>
         </div>
         <div className="mt-20 hidden gap-10 md:grid md:grid-cols-3">
-          {PILLARS.map((p, i) => (
+          {pillars.map((p, i) => (
             <Reveal key={p.n} delay={i * 0.15} className="border-t border-paper/15 pt-8">
               <PillarBody p={p} i={i} />
             </Reveal>
@@ -129,7 +138,7 @@ export function Pillars() {
   );
 }
 
-function PillarBody({ p, i }: { p: (typeof PILLARS)[number]; i: number }) {
+function PillarBody({ p, i }: { p: { n: string; title: string; body: string }; i: number }) {
   const Icon = PILLAR_ICONS[i];
   return (
     <>
@@ -139,8 +148,8 @@ function PillarBody({ p, i }: { p: (typeof PILLARS)[number]; i: number }) {
         </span>
         <span className="font-serif text-5xl text-paper/20 italic">{p.n}</span>
       </div>
-      <h3 className="mt-6 font-serif text-[1.7rem] leading-tight md:mt-8 md:text-3xl">{p.title}</h3>
-      <p className="mt-3 text-paper/70">{p.body}</p>
+      <h3 className="mt-6 font-serif text-[1.7rem] leading-tight md:mt-8 md:text-3xl"><Em text={p.title} /></h3>
+      <p className="mt-3 text-paper/70"><Em text={p.body} /></p>
     </>
   );
 }
@@ -152,7 +161,7 @@ const STEPS = [
   { n: 4, title: "The neck & nape sweep", minutes: 1 },
 ];
 
-export function RitualTeaser() {
+export function RitualTeaser({ c }: { c: Copy }) {
   return (
     <section className="wrap grid items-center gap-10 py-20 md:grid-cols-2 md:gap-16 md:py-40" aria-labelledby="ritual-title">
       <Reveal className="relative mx-auto aspect-square w-full max-w-[240px] md:max-w-[520px]">
@@ -167,11 +176,11 @@ export function RitualTeaser() {
         </div>
       </Reveal>
       <div>
-        <p className="eyebrow">The ritual</p>
+        <p className="eyebrow">{c["home.ritual.eyebrow"]}</p>
         <h2 id="ritual-title" className="title mt-4">
-          <RiseWords text="Siro Abhyanga, in four unhurried steps." italic={["Siro", "Abhyanga,"]} />
+          <Title text={c["home.ritual.title"]} />
         </h2>
-        <p className="lede mt-4 md:mt-6">The ritual is half the formula. Warm a few drops, breathe in three times, and let your fingertips do the rest.</p>
+        <p className="lede mt-4 md:mt-6"><Em text={c["home.ritual.lede"]} /></p>
         <ol className="mt-6 divide-y divide-line border-y border-line md:mt-10">
           {STEPS.map((s, i) => (
             <Reveal as="li" key={s.n} delay={i * 0.08} className="flex items-baseline justify-between py-3.5 md:py-5">
@@ -184,22 +193,22 @@ export function RitualTeaser() {
           ))}
         </ol>
         <Link href="/ritual" className="btn btn-dark mt-8 w-full md:mt-10 md:w-auto">
-          Begin the guided ritual <ArrowIcon size={16} />
+          {c["home.ritual.button"]} <ArrowIcon size={16} />
         </Link>
       </div>
     </section>
   );
 }
 
-export function JournalTeaser({ articles }: { articles: Article[] }) {
+export function JournalTeaser({ articles, c }: { articles: Article[]; c: Copy }) {
   return (
     <section className="bg-cream-deep py-20 md:py-40" aria-labelledby="journal-title">
       <div className="wrap">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <p className="eyebrow">The journal</p>
+            <p className="eyebrow">{c["home.journal.eyebrow"]}</p>
             <h2 id="journal-title" className="title mt-4">
-              <RiseWords text="Wisdom, history & the science." italic={["science."]} />
+              <Title text={c["home.journal.title"]} />
             </h2>
           </div>
           <Link href="/journal" className="link-underline self-start text-[0.74rem] tracking-[0.2em] uppercase md:self-auto">
@@ -237,16 +246,16 @@ export function JournalTeaser({ articles }: { articles: Article[] }) {
   );
 }
 
-export function SocialBand({ instagram, tiktok }: { instagram: string; tiktok: string }) {
+export function SocialBand({ instagram, tiktok, c }: { instagram: string; tiktok: string; c: Copy }) {
   return (
     <section className="wrap py-24 text-center md:py-32">
-      <p className="eyebrow">Join the community</p>
+      <p className="eyebrow">{c["home.social.eyebrow"]}</p>
       {instagram && (
         <a href={instagram} target="_blank" rel="noreferrer" className="group mt-6 inline-block">
           <span className="font-serif text-[clamp(2.6rem,8vw,7rem)] leading-none italic transition duration-700 group-hover:text-amber">{handleFrom(instagram)}</span>
         </a>
       )}
-      <p className="mx-auto mt-6 max-w-md text-ink-soft">Weekly wellness routines, slow mornings and new batches.</p>
+      <p className="mx-auto mt-6 max-w-md text-ink-soft"><Em text={c["home.social.body"]} /></p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         {instagram && <a href={instagram} target="_blank" rel="noreferrer" className="btn btn-ghost pressable">Instagram</a>}
         {tiktok && <a href={tiktok} target="_blank" rel="noreferrer" className="btn btn-ghost pressable">TikTok · {handleFrom(tiktok)}</a>}

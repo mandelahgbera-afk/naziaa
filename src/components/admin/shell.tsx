@@ -20,6 +20,7 @@ const NAV = [
   { href: "/complaints", label: "Complaints" },
   { href: "/customers", label: "Customers" },
   { href: "/products", label: "Products & batches" },
+  { href: "/words", label: "Site words" },
   { href: "/hero", label: "Hero video" },
   { href: "/newsletter", label: "Newsletter" },
   { href: "/settings", label: "Settings" },

@@ -16,6 +16,7 @@ const SECTION_LABEL: Record<string, string> = {
   hero: "Hero video",
   newsletter: "Newsletter",
   settings: "Settings",
+  words: "Site words",
 };
 
 /* Phone top bar, app-style: a back button on detail screens, and the page’s

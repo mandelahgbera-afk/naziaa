@@ -4,6 +4,9 @@ import { markOrderPaid } from "@/lib/orders";
 /* Flutterwave → us. Authenticated by the secret hash header, then the
    transaction is re-verified with Flutterwave before anything changes. */
 export async function POST(req: Request) {
+  // A plain reachability check (no secret header at all) gets a calm "ok" and
+  // nothing is processed. A request carrying a WRONG secret is refused.
+  if (!req.headers.get("verif-hash")) return new Response("ok", { status: 200 });
   if (!webhookIsAuthentic(req)) return new Response("unauthorised", { status: 401 });
 
   const event = await req.json().catch(() => null);

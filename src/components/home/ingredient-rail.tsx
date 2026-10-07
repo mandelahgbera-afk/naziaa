@@ -7,10 +7,12 @@ import { Botanical } from "@/components/botanicals";
 import { ArrowIcon } from "@/components/icons";
 import { RiseWords } from "@/components/motion";
 import type { Ingredient } from "@/lib/catalog";
+import { splitEmphasis } from "@/lib/content";
 
 /* Like Lujo's Material Library: a sideways rail of the four botanicals.
    Native scroll (touch, trackpad, keyboard all work) with snap + a progress hairline. */
-export function IngredientRail({ ingredients }: { ingredients: Ingredient[] }) {
+export function IngredientRail({ ingredients, eyebrow = "Ingredient library", title = "Four botanicals, *zero fillers.*" }: { ingredients: Ingredient[]; eyebrow?: string; title?: string }) {
+  const heading = splitEmphasis(title);
   const rail = useRef<HTMLDivElement>(null);
   const { scrollXProgress } = useScroll({ container: rail });
 
@@ -20,9 +22,9 @@ export function IngredientRail({ ingredients }: { ingredients: Ingredient[] }) {
     <section className="py-20 md:py-40" aria-labelledby="ingredients-title">
       <div className="wrap flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <p className="eyebrow">Ingredient library</p>
+          <p className="eyebrow">{eyebrow}</p>
           <h2 id="ingredients-title" className="title mt-4">
-            <RiseWords text="Four botanicals, zero fillers." italic={["zero", "fillers."]} />
+            <RiseWords text={heading.plain} italic={heading.italic} />
           </h2>
         </div>
         <div className="flex items-center gap-3">

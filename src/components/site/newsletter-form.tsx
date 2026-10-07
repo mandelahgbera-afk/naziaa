@@ -23,6 +23,7 @@ export function NewsletterForm({ source = "footer" }: { source?: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? "Something went wrong");
+      try { localStorage.setItem("nz-nl", "subscribed"); } catch {}
       setState("done");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Something went wrong");

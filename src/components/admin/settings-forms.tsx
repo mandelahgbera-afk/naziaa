@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { saveStorefrontSettings } from "@/app/admin/actions";
 import { CloseIcon, PlusIcon } from "@/components/icons";
 import { formatNaira } from "@/lib/catalog";
+import { isWhatsApp, toWhatsApp } from "@/lib/social";
 import { Switch } from "./delivery-manager";
 import { input, label } from "./ui";
 import { useAction } from "./use-action";
@@ -109,12 +110,6 @@ export function FreeDeliveryForm({ threshold, productPriceKobo }: { threshold: n
 
 /* ─── Contact & social ──────────────────────────────────────────────────── */
 
-/** 0803…, +234 803…, 234-803… → 234803… */
-export function normaliseWhatsApp(raw: string) {
-  let d = raw.replace(/\D/g, "");
-  if (d.startsWith("0") && d.length === 11) d = `234${d.slice(1)}`;
-  return d;
-}
 
 /** "@nazia.botanics", "nazia.botanics" or a full link → full profile URL */
 export function normaliseSocial(raw: string, kind: "instagram" | "tiktok") {
@@ -133,10 +128,10 @@ export function ContactForm({ contactEmail, whatsapp, instagram, tiktok }: { con
   const [ig, setIg] = useState(instagram);
   const [tt, setTt] = useState(tiktok);
 
-  const waNorm = normaliseWhatsApp(wa);
+  const waNorm = toWhatsApp(wa);
   const igNorm = normaliseSocial(ig, "instagram");
   const ttNorm = normaliseSocial(tt, "tiktok");
-  const waValid = !wa || /^\d{8,15}$/.test(waNorm);
+  const waValid = !wa.trim() || isWhatsApp(waNorm);
 
   return (
     <form
@@ -170,5 +165,41 @@ export function ContactForm({ contactEmail, whatsapp, instagram, tiktok }: { con
       </div>
       <button type="submit" disabled={pending || !waValid} className="btn btn-dark disabled:opacity-50">Save contact details</button>
     </form>
+  );
+}
+
+/* ─── Newsletter invitation ─────────────────────────────────────────────── */
+export function NudgeForm({ enabled, delaySeconds }: { enabled: boolean; delaySeconds: number }) {
+  const { run, pending } = useAction();
+  const [on, setOn] = useState(enabled);
+  const [delay, setDelay] = useState(delaySeconds);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <span>
+          <span className="block">Gentle newsletter invitation</span>
+          <span className="text-sm text-muted">A small card that slides up for visitors who are clearly enjoying the site. Never on checkout, never twice in a visit, and “Not now” rests it for 3 weeks.</span>
+        </span>
+        <Switch on={on} onChange={setOn} label="Gentle newsletter invitation" />
+      </div>
+      <AnimatePresence initial={false}>
+        {on && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <p className="mt-5 mb-2 text-xs tracking-[0.14em] text-muted uppercase">Invite after they’ve browsed for</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[20, 35, 60, 90].map((s) => (
+                <button key={s} type="button" aria-pressed={delay === s} onClick={() => setDelay(s)} className={`pressable rounded-xl border py-2.5 text-sm transition ${delay === s ? "border-ink bg-paper shadow-soft" : "border-line"}`}>
+                  {s}s
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted">…and scrolled through at least a third of a page. On computers it can also appear as they move to leave. Edit its words in Site words → Newsletter.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button type="button" disabled={pending} onClick={() => run(() => saveStorefrontSettings({ nudgeEnabled: on, nudgeDelaySeconds: delay }))} className="btn btn-dark mt-5 disabled:opacity-50">
+        Save
+      </button>
+    </div>
   );
 }

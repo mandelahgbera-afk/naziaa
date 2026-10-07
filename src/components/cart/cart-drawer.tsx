@@ -9,6 +9,7 @@ import { CloseIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { cartCount, cartSubtotal, useCart, MAX_QTY } from "@/lib/cart";
 import { formatNaira, type Product } from "@/lib/catalog";
 import { haptic, useIsMobile } from "@/lib/use-media";
+import { useCopy } from "@/components/copy";
 
 const silk = [0.22, 1, 0.36, 1] as const;
 
@@ -18,6 +19,7 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
   const [celebrate, setCelebrate] = useState(false);
   const lastPulse = useRef(pulse);
   const mobile = useIsMobile();
+  const c = useCopy();
   const drag = useDragControls();
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > 110 || info.velocity.y > 600) setOpen(false);
@@ -127,7 +129,7 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
                 >
                   <div className="mb-3 flex items-center gap-3 rounded-2xl bg-cream-deep px-4 py-2">
                     <DropMascot mood="happy" size={44} label="" />
-                    <p className="text-sm text-ink-soft">Added. A beautiful choice for your roots.</p>
+                    <p className="text-sm text-ink-soft">{c["bag.added"]}</p>
                   </div>
                 </motion.div>
               )}
@@ -198,7 +200,7 @@ export function CartDrawer({ products, freeDeliveryThresholdKobo }: { products: 
                   <span className="eyebrow">Subtotal</span>
                   <span className="font-serif text-2xl">{formatNaira(subtotal)}</span>
                 </div>
-                <p className="mt-1 text-xs text-muted">Delivery is calculated from your address at checkout.</p>
+                <p className="mt-1 text-xs text-muted">{c["bag.delivery"]}</p>
                 <Link href="/checkout" onClick={() => setOpen(false)} className="btn btn-dark mt-5 w-full">
                   Checkout
                 </Link>
@@ -226,12 +228,13 @@ export function QtyStepper({ value, onChange, label }: { value: number; onChange
 }
 
 function EmptyBag({ products, onAdd }: { products: Product[]; onAdd: (p: Product) => void }) {
+  const c = useCopy();
   return (
     <div className="flex h-full flex-col items-center pt-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-center md:pt-6">
       <DropMascot mood="waiting" size={150} label="Drop is waiting for something to hold" />
-      <h3 className="mt-6 font-serif text-3xl">Your bag is resting.</h3>
+      <h3 className="mt-6 font-serif text-3xl">{c["bag.empty.title"]}</h3>
       <p className="mt-2 max-w-xs text-sm text-ink-soft">
-        Like a good oil, it’s happiest when it has something to hold. Begin with a single bottle.
+        {c["bag.empty.body"]}
       </p>
       <div className="mt-8 grid w-full grid-cols-2 gap-3">
         {products.slice(0, 2).map((p) => (

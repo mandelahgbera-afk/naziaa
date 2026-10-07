@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { cache } from "react";
+import { mergeCopy, type Copy } from "./content";
 import { PRODUCTS, type Product } from "./catalog";
 
 /* Storefront reads. Public, cache-friendly, anon key only (RLS allows reading
@@ -22,6 +24,9 @@ export type StorefrontSettings = {
   contactEmail: string;
   instagram: string;
   tiktok: string;
+  /** the gentle newsletter invitation */
+  nudgeEnabled: boolean;
+  nudgeDelaySeconds: number;
 };
 
 const DEFAULT_SETTINGS: StorefrontSettings = {
@@ -31,6 +36,8 @@ const DEFAULT_SETTINGS: StorefrontSettings = {
   contactEmail: "hello@naziabotanics.com",
   instagram: "https://www.instagram.com/nazia.botanics/",
   tiktok: "https://www.tiktok.com/@nazia_botanics",
+  nudgeEnabled: true,
+  nudgeDelaySeconds: 35,
 };
 
 function db() {
@@ -130,3 +137,15 @@ export async function getSettings(): Promise<StorefrontSettings> {
     return DEFAULT_SETTINGS;
   }
 }
+
+/** All website text: the originals merged with anything edited in the Studio (once per request). */
+export const getCopy = cache(async (): Promise<Copy> => {
+  const client = db();
+  if (!client) return mergeCopy(null);
+  try {
+    const { data } = await client.from("site_settings").select("value").eq("key", "content").maybeSingle();
+    return mergeCopy((data?.value as Copy | null) ?? null);
+  } catch {
+    return mergeCopy(null);
+  }
+});
