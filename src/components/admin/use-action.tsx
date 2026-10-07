@@ -7,7 +7,7 @@ import { createContext, useCallback, useContext, useState, useTransition } from 
 type R = { ok: true; message?: string } | { ok: false; error: string };
 type Toast = { id: number; text: string; tone: "good" | "bad" };
 
-const ToastCtx = createContext<(t: Omit<Toast, "id">) => void>(() => {});
+export const ToastCtx = createContext<(t: Omit<Toast, "id">) => void>(() => {});
 
 export function Toaster({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -59,3 +59,6 @@ export function useAction() {
   );
   return { run, pending };
 }
+
+/** a toast without running an action — e.g. after an upload */
+export const useToast = () => useContext(ToastCtx);

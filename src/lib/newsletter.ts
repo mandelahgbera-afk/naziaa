@@ -27,6 +27,7 @@ export type NewsletterInput = {
   preheader?: string;
   body: string;
   tip?: string;
+  image?: { url: string; caption?: string } | null;
   featured?: { name: string; tagline: string; price: string; slug: string; tint: [string, string] } | null;
   cta?: { label: string; url: string } | null;
   socials?: { instagram?: string; tiktok?: string; whatsapp?: string | null };
@@ -59,6 +60,13 @@ export function newsletterEmail(input: NewsletterInput, unsubscribe: string) {
       </td>
     </tr>
   </table>
+</td></tr>`
+    : "";
+
+  const image = input.image?.url
+    ? `<tr><td style="padding:22px 36px 0">
+  <img src="${esc(input.image.url)}" alt="${esc(input.image.caption ?? "")}" width="528" style="display:block;width:100%;max-width:528px;height:auto;border:0;border-radius:20px">
+  ${input.image.caption ? `<div style="font-family:${serif};font-style:italic;font-size:14px;line-height:1.5;color:#7a665a;margin-top:10px;text-align:center">${rich(input.image.caption)}</div>` : ""}
 </td></tr>`
     : "";
 
@@ -115,6 +123,7 @@ export function newsletterEmail(input: NewsletterInput, unsubscribe: string) {
 <tr><td style="background:#fffaf5;border-radius:28px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     ${lead ? `<tr><td style="padding:34px 36px 4px;font-family:${serif};font-size:21px;line-height:1.55;color:#2b211c">${rich(lead).replace(/\n/g, "<br>")}</td></tr>` : ""}
+    ${image}
     ${rest.map((p) => `<tr><td style="padding:14px 36px 0;font-family:${sans};font-size:15.5px;line-height:1.75;color:#5e4c42">${rich(p).replace(/\n/g, "<br>")}</td></tr>`).join("")}
     ${tip}
     ${featured}

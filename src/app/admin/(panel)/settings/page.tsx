@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChangePasswordForm } from "@/components/admin/change-password";
 import { DeliveryManager, type Zone } from "@/components/admin/delivery-manager";
 import { PracticeData } from "@/components/admin/practice-data";
-import { AnnouncementsForm, ContactForm, FreeDeliveryForm, NudgeForm } from "@/components/admin/settings-forms";
+import { AnnouncementsForm, ContactForm, FreeDeliveryForm, NudgeForm, OrderAlertsForm } from "@/components/admin/settings-forms";
 import { Card, PageHead } from "@/components/admin/ui";
 import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
@@ -12,7 +12,7 @@ import { demoCounts } from "@/lib/demo";
 const TABS = [
   { id: "delivery", label: "Delivery" },
   { id: "storefront", label: "Storefront" },
-  { id: "contact", label: "Contact & social" },
+  { id: "contact", label: "Contact & alerts" },
   { id: "account", label: "Your sign-in" },
   { id: "practice", label: "Practice data" },
 ] as const;
@@ -80,6 +80,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
         )}
 
         {tab === "contact" && (
+          <div className="space-y-4">
           <Card>
             <p className="eyebrow mb-5">Contact &amp; social</p>
             <ContactForm
@@ -89,6 +90,11 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
               tiktok={v.tiktok ?? defaults.tiktok}
             />
           </Card>
+          <Card>
+            <p className="eyebrow mb-4">New-order alerts</p>
+            <OrderAlertsForm enabled={defaults.orderAlerts} email={defaults.orderAlertEmail} fallback={profile.role === "owner" ? (user.email ?? "") : ""} />
+          </Card>
+          </div>
         )}
 
         {tab === "account" && (

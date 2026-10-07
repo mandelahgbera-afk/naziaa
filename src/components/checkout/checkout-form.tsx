@@ -253,8 +253,11 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
             )}
           </AnimatePresence>
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-ink-soft">
-            <input type="checkbox" name="marketing" className="mt-1 size-4 accent-amber" />
-            Send me the weekly ritual email and first access to new batches.
+            <input type="checkbox" name="marketing" defaultChecked className="mt-1 size-4 accent-amber" />
+            <span>
+              Keep me on the weekly ritual email — tips, new batches and first access.
+              <span className="block text-xs text-muted">One email a week at most. Unsubscribe any time.</span>
+            </span>
           </label>
         </Step>
       </div>

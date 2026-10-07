@@ -168,6 +168,36 @@ export function ContactForm({ contactEmail, whatsapp, instagram, tiktok }: { con
   );
 }
 
+/* ─── New-order alerts ──────────────────────────────────────────────────── */
+export function OrderAlertsForm({ enabled, email, fallback }: { enabled: boolean; email: string; fallback: string }) {
+  const { run, pending } = useAction();
+  const [on, setOn] = useState(enabled);
+  const [to, setTo] = useState(email);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <span>
+          <span className="block">Email me every new order</span>
+          <span className="text-sm text-muted">The moment a payment clears: who, what, where and a button straight to the order. Customers always get their receipt either way.</span>
+        </span>
+        <Switch on={on} onChange={setOn} label="Email me every new order" />
+      </div>
+      <AnimatePresence initial={false}>
+        {on && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <label className={`${label} mt-5`}>Send alerts to</label>
+            <input type="email" inputMode="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder={fallback || "you@gmail.com"} className={input} />
+            <p className="mt-1.5 text-xs text-muted">{to.trim() ? "Alerts go to this address." : fallback ? `Leave empty to use your sign-in email (${fallback}).` : "Leave empty to use the owner’s sign-in email."}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button type="button" disabled={pending} onClick={() => run(() => saveStorefrontSettings({ orderAlerts: on, orderAlertEmail: to.trim() }))} className="btn btn-dark mt-5 disabled:opacity-50">
+        Save
+      </button>
+    </div>
+  );
+}
+
 /* ─── Newsletter invitation ─────────────────────────────────────────────── */
 export function NudgeForm({ enabled, delaySeconds }: { enabled: boolean; delaySeconds: number }) {
   const { run, pending } = useAction();
@@ -187,13 +217,15 @@ export function NudgeForm({ enabled, delaySeconds }: { enabled: boolean; delaySe
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <p className="mt-5 mb-2 text-xs tracking-[0.14em] text-muted uppercase">Invite after they’ve browsed for</p>
             <div className="grid grid-cols-4 gap-2">
-              {[20, 35, 60, 90].map((s) => (
+              {[8, 20, 35, 60].map((s) => (
                 <button key={s} type="button" aria-pressed={delay === s} onClick={() => setDelay(s)} className={`pressable rounded-xl border py-2.5 text-sm transition ${delay === s ? "border-ink bg-paper shadow-soft" : "border-line"}`}>
                   {s}s
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted">…and scrolled through at least a third of a page. On computers it can also appear as they move to leave. Edit its words in Site words → Newsletter.</p>
+            <p className="mt-2 text-xs text-muted">…and scrolled a little. On phones it also appears when someone who has read a while scrolls back up quickly; on computers, as they move to leave. Edit its words in Site words → Newsletter.</p>
+            <a href="/?nudge=preview" target="_blank" rel="noreferrer" className="link-underline mt-3 inline-block text-sm">See it now on the shop →</a>
+            <p className="mt-1 text-xs text-muted">Opens the shop with the invitation showing straight away, just for you — visitors still get the gentle timing.</p>
           </motion.div>
         )}
       </AnimatePresence>

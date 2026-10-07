@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { lateApologyEmail, orderConfirmationEmail, sendEmail, statusEmail } from "./email";
+import { lateApologyEmail, newOrderAlertEmail, orderConfirmationEmail, sendEmail, statusEmail } from "./email";
 import type { VerifiedTx } from "./flutterwave";
 import { supabaseAdmin } from "./supabase/admin";
 
@@ -141,14 +141,56 @@ export async function markOrderPaid(tx: VerifiedTx) {
   if (full) {
     const mail = orderConfirmationEmail(full);
     await sendEmail({ to: full.email, subject: mail.subject, html: mail.html, tag: "order_confirmation" });
+    await joinNewsletterIfOptedIn(full.email);
+    await alertOwner(order.id);
   }
   return { ok: true as const, orderId: order.id, already: false };
+}
+
+/** Buyers who left "keep me on the weekly ritual email" ticked join the list.
+    Anyone who unsubscribed before stays unsubscribed. */
+async function joinNewsletterIfOptedIn(email: string) {
+  try {
+    const db = supabaseAdmin();
+    const { data: c } = await db.from("customers").select("marketing_opt_in").eq("email", email).maybeSingle();
+    if (!c?.marketing_opt_in) return;
+    await db
+      .from("newsletter_subscribers")
+      .upsert({ email: email.toLowerCase(), source: "checkout", status: "subscribed", consent_at: new Date().toISOString() }, { onConflict: "email", ignoreDuplicates: true });
+  } catch (e) {
+    console.error("newsletter join after checkout failed", e);
+  }
+}
+
+/** A "new order" email to whoever runs the shop. */
+async function alertOwner(orderId: string) {
+  try {
+    const db = supabaseAdmin();
+    const [{ data: o }, { data: settings }] = await Promise.all([
+      db.from("orders").select("ref, full_name, phone, total_kobo, delivery_window, gift_wrap, address, created_at, zone:delivery_zones(name), items:order_items(name, qty)").eq("id", orderId).single(),
+      db.from("site_settings").select("value").eq("key", "storefront").maybeSingle(),
+    ]);
+    const v = (settings?.value ?? {}) as { orderAlerts?: boolean; orderAlertEmail?: string; contactEmail?: string };
+    if (!o || v.orderAlerts === false) return;
+    let to = v.orderAlertEmail || process.env.ORDER_ALERT_EMAIL || "";
+    if (!to) {
+      // nobody chosen yet: the owner's own sign-in email
+      const { data: owners } = await db.from("profiles").select("id").eq("role", "owner").limit(3);
+      const emails = await Promise.all((owners ?? []).map(async (p) => (await db.auth.admin.getUserById(p.id)).data.user?.email));
+      to = emails.filter(Boolean).join(",");
+    }
+    if (!to) return;
+    const mail = newOrderAlertEmail({ ...o, id: orderId, zone: (o.zone as { name?: string } | null)?.name ?? "" });
+    for (const addr of to.split(",")) await sendEmail({ to: addr.trim(), subject: mail.subject, html: mail.html, tag: "order_alert" });
+  } catch (e) {
+    console.error("order alert failed", e);
+  }
 }
 
 export async function getOrderForEmail(orderId: string) {
   const { data } = await supabaseAdmin()
     .from("orders")
-    .select("ref, full_name, email, tracking_token, subtotal_kobo, delivery_fee_kobo, discount_kobo, total_kobo, delivery_code, items:order_items(name, qty, unit_price_kobo)")
+    .select("ref, full_name, email, phone, tracking_token, subtotal_kobo, delivery_fee_kobo, discount_kobo, total_kobo, delivery_code, created_at, payment_ref, provider_tx_id, address, delivery_window, gift_wrap, items:order_items(name, qty, unit_price_kobo)")
     .eq("id", orderId)
     .single();
   return data;

@@ -55,7 +55,7 @@ export function ProductDetail({ product, delivery, inside }: { product: Product;
               </motion.div>
             </AnimatePresence>
           </div>
-          <div className="mt-4 flex gap-3" role="tablist" aria-label="Product images">
+          {product.square && <div className="mt-4 flex gap-3" role="tablist" aria-label="Product images">
             {(["cutout", "square"] as const).map((v) => (
               <button
                 key={v}
@@ -69,7 +69,7 @@ export function ProductDetail({ product, delivery, inside }: { product: Product;
                 <Image src={v === "cutout" ? product.cutout : product.square} alt="" fill sizes="64px" className={v === "cutout" ? "object-contain p-1.5" : "object-cover"} />
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -97,7 +97,7 @@ export function ProductDetail({ product, delivery, inside }: { product: Product;
 
         <p className="mt-8 text-[1.05rem] text-ink-soft">{product.description}</p>
 
-        <ul className="mt-8 grid grid-cols-2 gap-3">
+        {product.benefits.length > 0 && <ul className="mt-8 grid grid-cols-2 gap-3">
           {product.benefits.map((b) => (
             <li key={b.label} className="rounded-2xl bg-paper p-4">
               <LeafIcon size={18} className="text-sage" />
@@ -105,7 +105,7 @@ export function ProductDetail({ product, delivery, inside }: { product: Product;
               <p className="mt-1 text-xs tracking-[0.16em] text-muted uppercase">{b.source}</p>
             </li>
           ))}
-        </ul>
+        </ul>}
 
         <div ref={buyRow} className="mt-10 flex flex-wrap items-center gap-4">
           <QtyStepper value={qty} onChange={(n) => setQty(Math.max(1, n))} label={product.name} />

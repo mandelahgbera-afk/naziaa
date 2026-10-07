@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { imageBytes } from "./image-source";
 
 /* Shared kit for share-preview images (WhatsApp, Instagram DMs, X, iMessage,
    Google): brand fonts, bottle photos converted to PNG (the renderer can't read
@@ -24,11 +25,10 @@ export async function ogFonts() {
 }
 
 /** A file from /public as a PNG data URL, resized to fit `height`. */
-export async function publicPng(publicPath: string, height: number) {
-  if (!publicPath.startsWith("/")) return null;
+export async function publicPng(src: string, height: number) {
+  if (!src) return null;
   try {
-    const buf = await readFile(path.join(root, "public", publicPath));
-    const png = await sharp(buf).resize({ height, fit: "inside" }).png().toBuffer();
+    const png = await sharp(await imageBytes(src)).resize({ height, fit: "inside" }).png().toBuffer();
     const meta = await sharp(png).metadata();
     return { src: `data:image/png;base64,${png.toString("base64")}`, width: meta.width ?? height, height: meta.height ?? height };
   } catch {

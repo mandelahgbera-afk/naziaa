@@ -38,6 +38,13 @@ export function NewsletterNudge({ enabled, delaySeconds }: { enabled: boolean; d
 
   const quiet = QUIET_PATHS.some((p) => pathname.startsWith(p));
 
+  // "See it now" from the Studio: show it straight away, without touching anyone's timing
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("nudge") !== "preview") return;
+    const t = window.setTimeout(() => setOpen(true), 900);
+    return () => window.clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     if (!enabled || quiet || open) return;
     const local = store("local");
@@ -61,9 +68,17 @@ export function NewsletterNudge({ enabled, delaySeconds }: { enabled: boolean; d
       if (seconds >= delaySeconds && read.current) show();
     }, 1000);
 
+    // phones have no "moving to leave": a quick swipe back up after reading a while is the closest signal
+    let lastY = window.scrollY;
+    let lastT = performance.now();
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (max > 0 && window.scrollY / max > 0.33) read.current = true;
+      if (max > 0 && window.scrollY / max > 0.2) read.current = true;
+      const now = performance.now();
+      const speed = (lastY - window.scrollY) / Math.max(1, now - lastT); // px per ms, upward positive
+      if (speed > 2.2 && read.current && seconds >= Math.min(15, delaySeconds) && window.matchMedia("(pointer: coarse)").matches) show();
+      lastY = window.scrollY;
+      lastT = now;
     };
     const onLeave = (e: MouseEvent) => {
       if (e.clientY <= 8 && seconds >= 12 && !e.relatedTarget) show();

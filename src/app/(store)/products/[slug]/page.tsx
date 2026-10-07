@@ -8,6 +8,7 @@ import { Reveal } from "@/components/motion";
 import { ProductDetail } from "@/components/product/product-detail";
 import { formatNaira, PRODUCTS } from "@/lib/catalog";
 import { getCopy, getProduct, getProducts } from "@/lib/data";
+import { absoluteUrl } from "@/lib/backdrops";
 
 // Admin edits and paid orders refresh these instantly; this is only the safety net
 export const revalidate = 300;
@@ -44,7 +45,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
       description: product.description,
       sku: product.slug,
       url,
-      image: [`${site}${product.square}`, `${site}${product.cutout}`],
+      image: [product.square, product.cutout].filter(Boolean).map((src) => absoluteUrl(src, site)),
       brand: { "@type": "Brand", name: "Nazia Botanics" },
       offers: {
         "@type": "Offer",

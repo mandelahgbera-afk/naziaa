@@ -17,7 +17,7 @@ const FIELD_NAMES: Record<string, string> = {
   lowStockThreshold: "Low-stock alert", code: "Batch code", infusedOn: "Infused date", expiresOn: "Best-before date", qty: "Bottles",
   title: "Title", tint: "Tint", startsAt: "Show from", endsAt: "Until", priority: "Priority", mobilePlaybackId: "Phone cut",
   announcements: "Announcements", freeDeliveryThresholdNaira: "Free delivery amount", whatsappNumber: "WhatsApp number",
-  contactEmail: "Contact email", instagram: "Instagram", tiktok: "TikTok", neighbourhoods: "Neighbourhoods", feeNaira: "Delivery fee",
+  contactEmail: "Contact email", orderAlertEmail: "Order alert email", instagram: "Instagram", tiktok: "TikTok", neighbourhoods: "Neighbourhoods", feeNaira: "Delivery fee", benefits: "Benefits", howToUse: "How to use", cutoutUrl: "Bottle photo", squareUrl: "Lifestyle photo",
 };
 
 function humanIssue(issue: z.core.$ZodIssue) {
@@ -145,22 +145,29 @@ export async function setRiderActive(riderId: string, active: boolean): Promise<
 }
 
 // ─── Products & batches ──────────────────────────────────────────────────────
+const Benefit = z.object({ label: z.string().trim().min(1).max(40), source: z.string().trim().max(40) });
 const ProductInput = z.object({
-  name: z.string().trim().min(2).max(80),
+  name: z.string().trim().min(2, "Give the product a name.").max(80),
   subtitle: z.string().trim().max(120),
   tagline: z.string().trim().max(160),
   description: z.string().trim().max(1200),
-  priceNaira: z.number().int().min(0).max(10_000_000),
-  sizeMl: z.number().int().min(1).max(5000),
+  priceNaira: z.number({ error: "Enter a price in naira." }).min(100, "Price needs to be at least ₦100.").max(10_000_000).transform((n) => Math.round(n)),
+  sizeMl: z.number().int().min(1, "Enter the bottle size in ml.").max(5000),
   status: z.enum(["draft", "active", "archived"]),
   trackInventory: z.boolean(),
   lowStockThreshold: z.number().int().min(0).max(10000),
+  benefits: z.array(Benefit).max(4).optional(),
+  howToUse: z.array(z.string().trim().min(1).max(240)).max(6).optional(),
 });
 
 export async function updateProduct(id: string, input: z.input<typeof ProductInput>): Promise<Result> {
   try {
     const { supabase, user } = await requireStaff();
     const d = ProductInput.parse(input);
+    if (d.status === "active") {
+      const { data: cur } = await supabase.from("products").select("cutout_url").eq("id", id).single();
+      if (!cur?.cutout_url) throw new Error("Add a bottle photo (Photo & colour) before putting this product on the shop.");
+    }
     const { error } = await supabase
       .from("products")
       .update({
@@ -173,12 +180,174 @@ export async function updateProduct(id: string, input: z.input<typeof ProductInp
         status: d.status,
         track_inventory: d.trackInventory,
         low_stock_threshold: d.lowStockThreshold,
+        ...(d.benefits ? { benefits: d.benefits } : {}),
+        ...(d.howToUse ? { how_to_use: d.howToUse } : {}),
       })
       .eq("id", id);
     if (error) throw error;
     await audit(user.id, "product.update", "product", id, d);
     refreshStore();
     return { ok: true, message: "Saved — the shop updates within a minute." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+
+/* Images: the browser uploads the original straight to storage (no size limit on the way),
+   then this tidies it: turns it upright, trims empty transparent edges, resizes and saves a
+   light WebP. Bottle photos are checked for a see-through background. */
+export async function processUpload(
+  rawPath: string,
+  kind: "cutout" | "square" | "newsletter",
+  name: string,
+): Promise<{ ok: true; url: string; transparent: boolean } | { ok: false; error: string }> {
+  try {
+    await requireStaff();
+    if (!/^incoming\/[a-z0-9-]+\.[a-z0-9]+$/i.test(rawPath)) throw new Error("That upload couldn’t be found — please choose the photo again.");
+    const sharp = (await import("sharp")).default;
+    const db = supabaseAdmin();
+    const { data: blob, error: dErr } = await db.storage.from("media").download(rawPath);
+    if (dErr || !blob) throw new Error("That upload couldn’t be found — please choose the photo again.");
+    const original = Buffer.from(await blob.arrayBuffer());
+
+    const meta = await sharp(original, { failOn: "none" }).metadata();
+    if (!meta.width || !meta.height) throw new Error("That file isn’t a photo we can read — try a PNG, WebP or JPG.");
+
+    let transparent = false;
+    if (meta.hasAlpha) {
+      const stats = await sharp(original, { failOn: "none" }).rotate().stats();
+      transparent = (stats.channels[3]?.min ?? 255) < 16;
+    }
+
+    let out: Buffer;
+    let ext = "webp";
+    let type = "image/webp";
+    if (kind === "cutout") {
+      let upright = await sharp(original, { failOn: "none" }).rotate().toBuffer();
+      if (transparent) {
+        try {
+          upright = await sharp(upright).trim({ threshold: 4 }).toBuffer();
+        } catch {}
+      }
+      out = await sharp(upright).resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true }).webp({ quality: 88, alphaQuality: 95, effort: 5 }).toBuffer();
+    } else if (kind === "square") {
+      out = await sharp(original, { failOn: "none" }).rotate().resize({ width: 1600, height: 1600, fit: "cover", withoutEnlargement: true }).webp({ quality: 82, effort: 5 }).toBuffer();
+    } else {
+      // email images: Outlook and older mail apps can't show WebP
+      const base = sharp(original, { failOn: "none" }).rotate().resize({ width: 1200, height: 1600, fit: "inside", withoutEnlargement: true });
+      if (transparent) {
+        out = await base.png({ compressionLevel: 9, palette: false }).toBuffer();
+        ext = "png";
+        type = "image/png";
+      } else {
+        out = await base.jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+        ext = "jpg";
+        type = "image/jpeg";
+      }
+    }
+
+    const folder = kind === "newsletter" ? "newsletter" : "products";
+    const dest = `${folder}/${slugify(name) || "image"}-${kind}-${Date.now().toString(36)}.${ext}`;
+    const { error: uErr } = await db.storage.from("media").upload(dest, out, { contentType: type, cacheControl: "31536000", upsert: false });
+    if (uErr) throw uErr;
+    await db.storage.from("media").remove([rawPath]);
+    const url = db.storage.from("media").getPublicUrl(dest).data.publicUrl;
+    return { ok: true, url, transparent };
+  } catch (e) {
+    const r = fail(e);
+    return r.ok ? { ok: false, error: "Something went wrong — please try again." } : r;
+  }
+}
+
+const isOurImage = (u: string) => u.startsWith("/images/") || u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`);
+const ImageUrl = z.string().refine(isOurImage, "Please upload the photo again.");
+
+const LookInput = z.object({
+  cutoutUrl: ImageUrl.optional(),
+  squareUrl: ImageUrl.or(z.literal("")).optional(),
+  backdropId: z.string(),
+});
+
+/** Bottle photo, lifestyle photo and backdrop — any or all at once. */
+export async function saveProductLook(id: string, input: z.input<typeof LookInput>): Promise<Result> {
+  try {
+    const { supabase, user } = await requireStaff();
+    const d = LookInput.parse(input);
+    const { BACKDROPS } = await import("@/lib/backdrops");
+    const b = BACKDROPS.find((x) => x.id === d.backdropId);
+    const { error } = await supabase
+      .from("products")
+      .update({
+        ...(b ? { tint_top: b.top, tint_bottom: b.bottom, accent: b.accent } : {}),
+        ...(d.cutoutUrl ? { cutout_url: d.cutoutUrl } : {}),
+        ...(d.squareUrl !== undefined ? { square_url: d.squareUrl } : {}),
+      })
+      .eq("id", id);
+    if (error) throw error;
+    await audit(user.id, "product.look", "product", id, d);
+    refreshStore();
+    return { ok: true, message: "New look saved — the shop updates within a minute." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const NewProductInput = ProductInput.omit({ trackInventory: true, lowStockThreshold: true }).extend({
+  cutoutUrl: ImageUrl.optional(),
+  squareUrl: ImageUrl.optional(),
+  backdropId: z.string(),
+});
+
+export async function createProduct(input: z.input<typeof NewProductInput>): Promise<Result> {
+  try {
+    const { supabase, user } = await requireStaff();
+    const d = NewProductInput.parse(input);
+    if (d.status === "active" && !d.cutoutUrl) throw new Error("Add a bottle photo before putting the product on the shop — or save it hidden for now.");
+    const { BACKDROPS } = await import("@/lib/backdrops");
+    const b = BACKDROPS.find((x) => x.id === d.backdropId) ?? BACKDROPS[0];
+
+    // a unique web address from the name: "Rosemary Mint" → /products/rosemary-mint
+    const base = slugify(d.name) || "oil";
+    const [{ data: taken }, { data: last }] = await Promise.all([
+      supabase.from("products").select("slug").like("slug", `${base}%`),
+      supabase.from("products").select("sort").order("sort", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    let slug = base;
+    for (let n = 2; taken?.some((t) => t.slug === slug); n++) slug = `${base}-${n}`;
+
+    const { error } = await supabase.from("products").insert({
+      slug,
+      name: d.name,
+      subtitle: d.subtitle,
+      tagline: d.tagline || null,
+      description: d.description,
+      price_kobo: d.priceNaira * 100,
+      size_ml: d.sizeMl,
+      status: d.status,
+      cutout_url: d.cutoutUrl ?? "",
+      square_url: d.squareUrl ?? "",
+      tint_top: b.top,
+      tint_bottom: b.bottom,
+      accent: b.accent,
+      benefits: d.benefits ?? [],
+      how_to_use: d.howToUse ?? [],
+      notes: ["Handmade in small batches.", "Cosmetic product — patch-test before first use."],
+      sort: (last?.sort ?? 0) + 1,
+    });
+    if (error) throw error;
+    await audit(user.id, "product.create", "product", null, { slug, name: d.name });
+    refreshStore();
+    revalidatePath("/admin/products");
+    return { ok: true, message: d.status === "active" ? `${d.name} is live on the shop.` : `${d.name} saved as hidden — switch it to Active when you’re ready.` };
   } catch (e) {
     return fail(e);
   }
@@ -328,7 +497,9 @@ const SettingsInput = z
     instagram: z.string().trim().url("Instagram must be a full link, e.g. https://www.instagram.com/nazia.botanics/").or(z.literal("")),
     tiktok: z.string().trim().url("TikTok must be a full link, e.g. https://www.tiktok.com/@nazia_botanics").or(z.literal("")),
     nudgeEnabled: z.boolean(),
-    nudgeDelaySeconds: z.number().int().min(10).max(300),
+    nudgeDelaySeconds: z.number().int().min(5).max(300),
+    orderAlerts: z.boolean(),
+    orderAlertEmail: z.string().trim().toLowerCase().email("Enter a full email for order alerts, like name@gmail.com").or(z.literal("")),
   })
   .partial();
 
@@ -336,7 +507,7 @@ export async function saveStorefrontSettings(input: z.input<typeof SettingsInput
   try {
     const { supabase, user } = await requireStaff();
     const parsed = SettingsInput.safeParse(input);
-    if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the settings");
+    if (!parsed.success) throw parsed.error;
     const d = parsed.data;
     const { data: current } = await supabase.from("site_settings").select("value").eq("key", "storefront").maybeSingle();
     const value: Record<string, unknown> = { ...((current?.value as Record<string, unknown>) ?? {}) };
@@ -454,6 +625,8 @@ export type NewsletterDraft = {
   featuredSlug?: string | null;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string | null;
+  imageCaption?: string;
 };
 
 /** Builds the exact email subscribers receive (used by preview, test and send). */
@@ -466,6 +639,7 @@ async function buildNewsletter(d: NewsletterDraft) {
     preheader: d.preheader?.trim() || undefined,
     body: d.body,
     tip: d.tip,
+    image: d.imageUrl && isOurImage(d.imageUrl) ? { url: d.imageUrl, caption: d.imageCaption?.trim() || undefined } : null,
     featured: p ? { name: p.name, tagline: p.tagline, price: formatNaira(p.priceKobo), slug: p.slug, tint: p.tint } : null,
     cta: d.ctaLabel?.trim() && d.ctaUrl?.trim() ? { label: d.ctaLabel.trim(), url: d.ctaUrl.trim() } : null,
     socials: { instagram: settings.instagram, tiktok: settings.tiktok, whatsapp: settings.whatsappNumber },
@@ -484,31 +658,32 @@ export async function previewNewsletter(d: NewsletterDraft): Promise<{ ok: true;
   }
 }
 
-export async function sendNewsletter(d: NewsletterDraft, testOnly: boolean): Promise<Result> {
+const TestTo = z.array(z.string().trim().toLowerCase().email("One of the test addresses isn’t a full email.")).min(1, "Add at least one email to test with.").max(10, "Tests go to 10 people at most.");
+
+/** `to: "everyone"` sends to all subscribers (owner only); a list of emails sends a [Test] copy just to them. */
+export async function sendNewsletter(d: NewsletterDraft, to: "everyone" | string[]): Promise<Result> {
   try {
-    const { user } = testOnly ? await requireStaff() : await requireOwner();
+    const { user } = to === "everyone" ? await requireOwner() : await requireStaff();
     if (d.subject.trim().length < 3 || d.body.trim().length < 20) throw new Error("Add a subject and a few lines of copy.");
     const { newsletterEmail, unsubscribeUrl, plainSubject } = await import("@/lib/newsletter");
+    const { sendEmailBatch } = await import("@/lib/email");
     const input = await buildNewsletter(d);
+    // one-click unsubscribe headers: required by Gmail and Yahoo for bulk senders
+    const mail = (email: string, subject: string) => {
+      const unsub = unsubscribeUrl(email);
+      return { to: email, subject, html: newsletterEmail(input, unsub), headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } };
+    };
 
-    if (testOnly) {
-      const html = newsletterEmail(input, unsubscribeUrl(user.email!));
-      await sendEmail({ to: user.email!, subject: `[Test] ${plainSubject(input.subject)}`, html, tag: "newsletter_test" });
-      return { ok: true, message: `Test sent to ${user.email}` };
+    if (to !== "everyone") {
+      const list = [...new Set(TestTo.parse(to))];
+      const sent = await sendEmailBatch(list.map((e) => mail(e, `[Test] ${plainSubject(input.subject)}`)), "newsletter_test");
+      if (!sent) throw new Error("The test didn’t send — check the email settings and try again.");
+      return { ok: true, message: list.length === 1 ? `Test sent to ${list[0]}` : `Test sent to ${list.length} people` };
     }
 
     const { data: subs, error } = await supabaseAdmin().from("newsletter_subscribers").select("email").eq("status", "subscribed");
     if (error) throw error;
-    let sent = 0;
-    for (const sub of subs ?? []) {
-      const unsub = unsubscribeUrl(sub.email);
-      const html = newsletterEmail(input, unsub);
-      // one-click unsubscribe headers: required by Gmail and Yahoo for bulk senders
-      const r = await sendEmail({ to: sub.email, subject: plainSubject(input.subject), html, tag: "newsletter", headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
-      if (!r.skipped && !r.error) sent++;
-      // stay under the email provider rate limit
-      await new Promise((res) => setTimeout(res, 550));
-    }
+    const sent = await sendEmailBatch((subs ?? []).map((s) => mail(s.email, plainSubject(input.subject))), "newsletter");
     await audit(user.id, "newsletter.send", "newsletter", null, { subject: plainSubject(input.subject), recipients: subs?.length ?? 0, sent });
     return { ok: true, message: `Sent to ${sent} of ${subs?.length ?? 0} subscribers.` };
   } catch (e) {

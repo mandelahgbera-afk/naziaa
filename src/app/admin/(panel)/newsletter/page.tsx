@@ -4,13 +4,14 @@ import { requireStaff } from "@/lib/auth";
 import { getProducts } from "@/lib/data";
 
 export default async function NewsletterPage() {
-  const { supabase, profile } = await requireStaff();
+  const { supabase, profile, user } = await requireStaff();
   const products = await getProducts();
-  const [{ count: subscribed }, { count: unsub }, { data: recent }, { data: sends }] = await Promise.all([
+  const [{ count: subscribed }, { count: unsub }, { data: recent }, { data: sends }, { data: people }] = await Promise.all([
     supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }).eq("status", "subscribed"),
     supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }).eq("status", "unsubscribed"),
     supabase.from("newsletter_subscribers").select("email, source, created_at").eq("status", "subscribed").order("created_at", { ascending: false }).limit(8),
     supabase.from("audit_log").select("detail, created_at").eq("action", "newsletter.send").order("created_at", { ascending: false }).limit(5),
+    supabase.from("newsletter_subscribers").select("email").eq("status", "subscribed").order("created_at", { ascending: false }).limit(300),
   ]);
 
   return (
@@ -22,7 +23,7 @@ export default async function NewsletterPage() {
         <Stat label="Campaigns sent" value={sends?.length ?? 0} hint="most recent five shown below" />
       </div>
       <Card className="mt-4">
-        <NewsletterComposer canSend={profile.role === "owner"} products={products.map((p) => ({ slug: p.slug, name: p.name }))} subscribers={subscribed ?? 0} />
+        <NewsletterComposer canSend={profile.role === "owner"} products={products.map((p) => ({ slug: p.slug, name: p.name }))} subscribers={subscribed ?? 0} myEmail={user.email ?? ""} people={(people ?? []).map((p) => p.email)} />
       </Card>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Card>
