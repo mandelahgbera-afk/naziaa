@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { lateApologyEmail, orderConfirmationEmail, sendEmail, statusEmail } from "./email";
 import type { VerifiedTx } from "./flutterwave";
 import { supabaseAdmin } from "./supabase/admin";
@@ -129,6 +130,11 @@ export async function markOrderPaid(tx: VerifiedTx) {
   if (!updated?.length) return { ok: true as const, orderId: order.id, already: true };
 
   await db.rpc("allocate_stock", { p_order: order.id });
+  // stock and batch shown on product pages may have changed. Allowed from the
+  // webhook (route handler); a page render may not revalidate, so ignore it there.
+  try {
+    revalidatePath("/", "layout");
+  } catch {}
   await db.from("checkout_sessions").update({ status: "converted" }).eq("order_id", order.id);
 
   const full = await getOrderForEmail(order.id);

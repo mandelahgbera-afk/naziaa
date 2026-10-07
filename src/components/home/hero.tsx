@@ -10,7 +10,6 @@ import { RiseWords } from "@/components/motion";
 import type { Product } from "@/lib/catalog";
 import type { HeroMedia } from "@/lib/data";
 
-const silk = [0.22, 1, 0.36, 1] as const;
 
 export function Hero({ media, products }: { media: HeroMedia; products: Product[] }) {
   const reduce = useReducedMotion();
@@ -54,40 +53,34 @@ export function Hero({ media, products }: { media: HeroMedia; products: Product[
 
       <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center">
         <motion.div className="relative z-10 md:col-span-7" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
-          <motion.p className="eyebrow text-paper/75" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: silk, delay: 0.2 }}>
+          <p className="eyebrow fade-up text-paper/75" style={{ ["--d" as string]: "0.2s" }}>
             Botanical hair &amp; scalp oils · Lagos
-          </motion.p>
+          </p>
           <h1 className="display mt-6 text-paper">
             <RiseWords text="Healthy hair starts from the root." italic={["root"]} immediate delay={0.35} stagger={0.09} />
           </h1>
-          <motion.p
-            className="mt-5 max-w-md text-[1rem] text-paper/80 md:mt-7 md:text-[1.08rem]"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: silk, delay: 1.1 }}
-          >
+          <p className="fade-up mt-5 max-w-md text-[1rem] text-paper/80 md:mt-7 md:text-[1.08rem]" style={{ ["--d" as string]: "0.9s" }}>
             Small-batch, cold-infused botanicals — formulated to treat shedding at its source, not the surface.
-          </motion.p>
-          <motion.div className="mt-8 flex flex-wrap gap-3 md:mt-10" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2, ease: silk, delay: 1.3 }}>
+          </p>
+          <div className="fade-up mt-8 flex flex-wrap gap-3 md:mt-10" style={{ ["--d" as string]: "1.1s" }}>
             <Link href="/shop" className="btn flex-1 bg-paper px-5 text-ink before:bg-honey sm:flex-none sm:px-8">Shop the oils</Link>
             <Link href="/ritual" className="btn btn-light flex-1 px-5 sm:flex-none sm:px-8">The ritual</Link>
-          </motion.div>
+          </div>
         </motion.div>
 
         {front && back && (
           <motion.div
             className="pointer-events-none relative mx-auto mt-6 h-[30svh] w-[72%] max-w-[340px] md:col-span-5 md:mx-0 md:mt-0 md:h-[74vh] md:w-auto md:max-w-none"
             style={reduce ? undefined : { y: bottlesY, rotateX: rx, rotateY: ry, transformPerspective: 1200 }}
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.8, ease: silk, delay: 0.5 }}
           >
+            <div className="fade-up absolute inset-0" style={{ ["--d" as string]: "0.4s" }}>
             <div className="absolute inset-[12%] rounded-full bg-honey/40 blur-[90px]" />
             <div className="absolute top-[10%] left-[8%] h-[78%] w-[42%] animate-float [animation-delay:-3s]">
-              <Image src={back.cutout} alt={back.name} fill priority sizes="(min-width: 768px) 18vw, 30vw" className="object-contain opacity-90 drop-shadow-[0_40px_40px_rgba(0,0,0,.45)]" />
+              <Image src={back.cutout} alt={back.name} fill preload sizes="(min-width: 768px) 18vw, 40vw" className="object-contain opacity-90 drop-shadow-[0_40px_40px_rgba(0,0,0,.45)]" />
             </div>
             <div className="absolute top-0 right-[6%] h-[96%] w-[48%] animate-float">
-              <Image src={front.cutout} alt={front.name} fill priority sizes="(min-width: 768px) 22vw, 36vw" className="object-contain drop-shadow-[0_50px_50px_rgba(0,0,0,.5)]" />
+              <Image src={front.cutout} alt={front.name} fill preload fetchPriority="high" sizes="(min-width: 768px) 22vw, 50vw" className="object-contain drop-shadow-[0_50px_50px_rgba(0,0,0,.5)]" />
+            </div>
             </div>
           </motion.div>
         )}

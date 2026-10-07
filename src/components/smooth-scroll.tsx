@@ -1,6 +1,6 @@
 "use client";
 
-import Lenis from "lenis";
+import type Lenis from "lenis";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useCart } from "@/lib/cart";
@@ -13,24 +13,31 @@ export function SmoothScroll() {
   const open = useCart((s) => s.open);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const l = new Lenis({ duration: 1.25, easing: (t) => 1 - Math.pow(1 - t, 4), touchMultiplier: 1.4 });
-    lenis.current = l;
+    // Touch screens keep native momentum scrolling (and skip this code entirely)
+    if (window.matchMedia("(prefers-reduced-motion: reduce), (pointer: coarse)").matches) return;
     let raf = 0;
-    const loop = (time: number) => {
-      l.raf(time);
+    let disposed = false;
+    import("lenis").then(({ default: LenisCtor }) => {
+      if (disposed) return;
+      const l = new LenisCtor({ duration: 1.25, easing: (t) => 1 - Math.pow(1 - t, 4) });
+      lenis.current = l;
+      const loop = (time: number) => {
+        l.raf(time);
+        raf = requestAnimationFrame(loop);
+      };
       raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    });
     return () => {
+      disposed = true;
       cancelAnimationFrame(raf);
-      l.destroy();
+      lenis.current?.destroy();
       lenis.current = null;
     };
   }, []);
 
   useEffect(() => {
-    lenis.current?.scrollTo(0, { immediate: true });
+    if (lenis.current) lenis.current.scrollTo(0, { immediate: true });
+    else window.scrollTo(0, 0);
   }, [pathname]);
 
   useEffect(() => {

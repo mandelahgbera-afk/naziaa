@@ -128,7 +128,7 @@ function AnnouncementBar({ items, light }: { items: string[]; light: boolean }) 
       <AnimatePresence mode="wait">
         <motion.p
           key={i}
-          className="absolute inset-0 grid place-items-center px-4"
+          className="absolute inset-0 truncate px-4 leading-9 text-[0.6rem] tracking-[0.2em] sm:text-[0.66rem] sm:tracking-[0.24em]"
           initial={{ y: "100%", opacity: 0 }}
           animate={{ y: "0%", opacity: 1 }}
           exit={{ y: "-100%", opacity: 0 }}

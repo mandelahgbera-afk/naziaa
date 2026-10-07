@@ -9,7 +9,8 @@ import { ProductDetail } from "@/components/product/product-detail";
 import { formatNaira, PRODUCTS } from "@/lib/catalog";
 import { getProduct, getProducts } from "@/lib/data";
 
-export const revalidate = 60;
+// Admin edits and paid orders refresh these instantly; this is only the safety net
+export const revalidate = 300;
 
 export async function generateStaticParams() {
   return PRODUCTS.map((p) => ({ slug: p.slug }));

@@ -5,7 +5,8 @@ import { RiseWords } from "@/components/motion";
 import { INGREDIENTS } from "@/lib/catalog";
 import { getProducts } from "@/lib/data";
 
-export const revalidate = 60;
+// Admin edits and paid orders refresh these instantly; this is only the safety net
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Shop the oils",

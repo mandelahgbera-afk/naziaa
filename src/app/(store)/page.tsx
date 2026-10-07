@@ -5,7 +5,8 @@ import { INGREDIENTS } from "@/lib/catalog";
 import { getHeroMedia, getProducts, getSettings } from "@/lib/data";
 import { ARTICLES } from "@/lib/journal";
 
-export const revalidate = 60;
+// Admin edits and paid orders refresh these instantly; this is only the safety net
+export const revalidate = 300;
 
 export default async function Home() {
   const [products, media, settings] = await Promise.all([getProducts(), getHeroMedia(), getSettings()]);

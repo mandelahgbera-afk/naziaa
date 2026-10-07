@@ -47,8 +47,8 @@ export const PRODUCTS: Product[] = [
     sizeMl: 50,
     cutout: "/images/products/rl-cutout.webp",
     square: "/images/products/rl-square.webp",
-    tint: ["#efe6ef", "#e3d6e6"],
-    accent: "#8d7aa3",
+    tint: ["#f2f0e4", "#d9dcc3"],
+    accent: "#6f7d5c",
     benefits: [
       { label: "Stimulates growth", source: "Rosemary" },
       { label: "Calming aroma", source: "Lavender" },

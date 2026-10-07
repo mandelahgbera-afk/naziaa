@@ -4,6 +4,8 @@ import { AddToBag } from "@/components/cart/add-to-bag";
 import { BreathIcon, HandsIcon, LeafIcon, RootIcon, ArrowIcon } from "@/components/icons";
 import { Reveal, RiseWords, ScrollInk } from "@/components/motion";
 import { JournalCover } from "@/components/journal-cover";
+import { MobileRail } from "@/components/mobile/mobile-rail";
+import { ProductArchRail } from "./product-arch-rail";
 import { formatNaira, PILLARS, TRUST, type Product } from "@/lib/catalog";
 import type { Article } from "@/lib/journal";
 
@@ -45,10 +47,14 @@ export function ProductShowcase({ products }: { products: Product[] }) {
             <RiseWords text="Two oils. A whole ritual." italic={["ritual"]} />
           </h2>
         </div>
-        <p className="lede md:max-w-sm">Each bottle is blended by hand in small batches, then shipped with the 5-minute ritual guide.</p>
+        <p className="lede hidden md:block md:max-w-sm">Each bottle is blended by hand in small batches, then shipped with the 5-minute ritual guide.</p>
       </div>
 
-      <div className="mt-10 grid md:mt-16 gap-10 md:grid-cols-2 md:gap-8">
+      <div className="mt-4">
+        <ProductArchRail products={products} />
+      </div>
+
+      <div className="mt-16 hidden gap-8 md:grid md:grid-cols-2">
         {products.map((p, i) => (
           <Reveal key={p.slug} delay={i * 0.15} as="article" className="group">
             <Link href={`/products/${p.slug}`} className="block" aria-label={`${p.name} — view details`}>
@@ -101,25 +107,40 @@ export function Pillars() {
         <h2 id="pillars-title" className="title mt-4 max-w-3xl text-paper">
           <RiseWords text="A holistic approach to hair that grows." italic={["grows."]} />
         </h2>
-        <div className="mt-12 grid gap-10 md:mt-20 md:grid-cols-3 md:gap-14 md:gap-10">
-          {PILLARS.map((p, i) => {
-            const Icon = PILLAR_ICONS[i];
-            return (
-              <Reveal key={p.n} delay={i * 0.15} className="border-t border-paper/15 pt-8">
-                <div className="flex items-center justify-between">
-                  <span className="grid size-14 place-items-center rounded-full border border-paper/20 text-honey">
-                    <Icon size={26} />
-                  </span>
-                  <span className="font-serif text-5xl text-paper/20 italic">{p.n}</span>
-                </div>
-                <h3 className="mt-8 font-serif text-3xl">{p.title}</h3>
-                <p className="mt-3 text-paper/70">{p.body}</p>
-              </Reveal>
-            );
-          })}
+        <div className="mt-10">
+          <MobileRail tone="dark" itemClass="w-[78vw]" labels={PILLARS.map((p) => p.title)}>
+            {PILLARS.map((p, i) => (
+              <div key={p.n} className="h-full rounded-[26px] border border-paper/10 bg-paper/[0.04] p-6">
+                <PillarBody p={p} i={i} />
+              </div>
+            ))}
+          </MobileRail>
+        </div>
+        <div className="mt-20 hidden gap-10 md:grid md:grid-cols-3">
+          {PILLARS.map((p, i) => (
+            <Reveal key={p.n} delay={i * 0.15} className="border-t border-paper/15 pt-8">
+              <PillarBody p={p} i={i} />
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function PillarBody({ p, i }: { p: (typeof PILLARS)[number]; i: number }) {
+  const Icon = PILLAR_ICONS[i];
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="grid size-12 place-items-center rounded-full border border-paper/20 text-honey md:size-14">
+          <Icon size={24} />
+        </span>
+        <span className="font-serif text-5xl text-paper/20 italic">{p.n}</span>
+      </div>
+      <h3 className="mt-6 font-serif text-[1.7rem] leading-tight md:mt-8 md:text-3xl">{p.title}</h3>
+      <p className="mt-3 text-paper/70">{p.body}</p>
+    </>
   );
 }
 
@@ -133,7 +154,7 @@ const STEPS = [
 export function RitualTeaser() {
   return (
     <section className="wrap grid items-center gap-10 py-20 md:grid-cols-2 md:gap-16 md:py-40" aria-labelledby="ritual-title">
-      <Reveal className="relative mx-auto aspect-square w-full max-w-[520px]">
+      <Reveal className="relative mx-auto aspect-square w-full max-w-[240px] md:max-w-[520px]">
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-peach to-sand" />
         <div className="absolute inset-[9%] animate-breathe rounded-full bg-gradient-to-br from-honey/70 to-amber-glow/60 blur-[2px]" />
         <div className="absolute inset-[24%] animate-breathe rounded-full bg-gradient-to-br from-paper to-peach [animation-delay:-1.2s]" />
@@ -149,19 +170,19 @@ export function RitualTeaser() {
         <h2 id="ritual-title" className="title mt-4">
           <RiseWords text="Siro Abhyanga, in four unhurried steps." italic={["Siro", "Abhyanga,"]} />
         </h2>
-        <p className="lede mt-6">The ritual is half the formula. Warm a few drops, breathe in three times, and let your fingertips do the rest.</p>
-        <ol className="mt-10 divide-y divide-line border-y border-line">
+        <p className="lede mt-4 md:mt-6">The ritual is half the formula. Warm a few drops, breathe in three times, and let your fingertips do the rest.</p>
+        <ol className="mt-6 divide-y divide-line border-y border-line md:mt-10">
           {STEPS.map((s, i) => (
-            <Reveal as="li" key={s.n} delay={i * 0.08} className="flex items-baseline justify-between py-5">
+            <Reveal as="li" key={s.n} delay={i * 0.08} className="flex items-baseline justify-between py-3.5 md:py-5">
               <span className="flex items-baseline gap-5">
                 <span className="font-serif text-xl text-muted italic">0{s.n}</span>
-                <span className="font-serif text-2xl">{s.title}</span>
+                <span className="font-serif text-xl md:text-2xl">{s.title}</span>
               </span>
               <span className="text-sm text-muted">{s.minutes} min</span>
             </Reveal>
           ))}
         </ol>
-        <Link href="/ritual" className="btn btn-dark mt-10">
+        <Link href="/ritual" className="btn btn-dark mt-8 w-full md:mt-10 md:w-auto">
           Begin the guided ritual <ArrowIcon size={16} />
         </Link>
       </div>
@@ -184,7 +205,20 @@ export function JournalTeaser({ articles }: { articles: Article[] }) {
             All articles
           </Link>
         </div>
-        <div className="mt-10 grid md:mt-16 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8">
+          <MobileRail itemClass="w-[72vw]" labels={articles.map((a) => a.title)}>
+            {articles.map((a) => (
+              <Link key={a.slug} href={`/journal/${a.slug}`} className="pressable block">
+                <div className="overflow-hidden rounded-[22px]">
+                  <JournalCover article={a} className="aspect-[4/5]" />
+                </div>
+                <p className="eyebrow mt-4">{a.category} · {a.minutes} min</p>
+                <h3 className="mt-1.5 font-serif text-xl leading-snug">{a.title}</h3>
+              </Link>
+            ))}
+          </MobileRail>
+        </div>
+        <div className="mt-16 hidden gap-x-8 gap-y-14 md:grid md:grid-cols-2 lg:grid-cols-4">
           {articles.map((a, i) => (
             <Reveal key={a.slug} delay={i * 0.1} as="article">
               <Link href={`/journal/${a.slug}`} className="group block">

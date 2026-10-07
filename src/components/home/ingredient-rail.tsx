@@ -37,7 +37,7 @@ export function IngredientRail({ ingredients }: { ingredients: Ingredient[] }) {
 
       <div
         ref={rail}
-        className="mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-[max(1rem,calc((100vw-1320px)/2+3rem))] pb-6 [scrollbar-width:none] md:gap-8 [&::-webkit-scrollbar]:hidden"
+        className="relative mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-[max(1rem,calc((100vw-1320px)/2+3rem))] pb-6 [scrollbar-width:none] md:gap-8 [&::-webkit-scrollbar]:hidden"
         data-lenis-prevent-wheel
         tabIndex={0}
         aria-label="Botanicals"

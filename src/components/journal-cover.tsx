@@ -27,7 +27,7 @@ export function JournalCover({ article, className = "" }: { article: Article; cl
         {article.category.replace("The ", "")[0]}
       </span>
       <div className="relative h-[72%] w-[64%]">
-        <Botanical slug={plant} hue={article.hue} />
+        <Botanical slug={plant} hue={article.hue} still />
       </div>
     </div>
   );

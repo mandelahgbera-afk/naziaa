@@ -7,7 +7,7 @@ values
   'rosemary-lavender', 'Rosemary Lavender', 'Hair & Scalp Botanical Treatment Oil',
   'Circulation at the root. Calm in the ritual.',
   'A botanical treatment oil made for the five-minute ritual. Rosemary stimulates circulation at the root, and lavender turns the ritual into a moment of calm.',
-  2500000, 50, '/images/products/rl-cutout.webp', '/images/products/rl-square.webp', '#efe6ef', '#e3d6e6', '#8d7aa3',
+  2500000, 50, '/images/products/rl-cutout.webp', '/images/products/rl-square.webp', '#f2f0e4', '#d9dcc3', '#6f7d5c',
   '[{"label":"Stimulates growth","source":"Rosemary"},{"label":"Calming aroma","source":"Lavender"}]',
   '["Warm 3–5 drops between your palms and breathe in the aroma three times.","Massage into the crown in slow circles, then zig-zag from forehead to nape.","Finish at the temples and the base of the skull. Three times a week."]',
   '["Handmade in small batches.","Cosmetic product — patch-test before first use."]',

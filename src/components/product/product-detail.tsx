@@ -47,7 +47,7 @@ export function ProductDetail({ product }: { product: Product }) {
               >
                 {view === "cutout" ? (
                   <div className="absolute inset-x-0 top-[9%] bottom-[9%] animate-float">
-                    <Image src={product.cutout} alt={`${product.name} ${product.sizeMl}ml bottle`} fill priority sizes="(min-width: 768px) 55vw, 95vw" className="object-contain drop-shadow-[0_40px_40px_rgba(58,42,34,.28)]" />
+                    <Image src={product.cutout} alt={`${product.name} ${product.sizeMl}ml bottle`} fill preload sizes="(min-width: 768px) 55vw, 95vw" className="object-contain drop-shadow-[0_40px_40px_rgba(58,42,34,.28)]" />
                   </div>
                 ) : (
                   <Image src={product.square} alt={`${product.name} photographed on a warm backdrop`} fill sizes="(min-width: 768px) 55vw, 95vw" className="object-cover" />

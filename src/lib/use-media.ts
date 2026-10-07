@@ -20,6 +20,9 @@ export const useIsMobile = () => useMedia("(max-width: 767px)");
 /** Light haptic tick on phones that support it (Android). */
 export function haptic(ms = 12) {
   try {
+    // only after the visitor has actually touched the page (browsers block it otherwise)
+    const ua = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
+    if (ua && !ua.hasBeenActive) return;
     navigator.vibrate?.(ms);
   } catch {}
 }

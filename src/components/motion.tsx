@@ -54,6 +54,20 @@ export function RiseWords({
 }) {
   const reduce = useReducedMotion();
   const words = text.split(" ");
+  if (immediate) {
+    return (
+      <span className={className} aria-label={text} role="text">
+        {words.map((w, i) => (
+          <span key={i} aria-hidden className="inline-block overflow-hidden pb-[0.12em] align-bottom">
+            <span className={`rise-word ${italic.includes(w.replace(/[.,]/g, "")) ? "italic" : ""}`} style={{ ["--d" as string]: `${delay + i * stagger}s` }}>
+              {w}
+              {i < words.length - 1 ? " " : ""}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  }
   const trigger = immediate ? { animate: "show" } : { whileInView: "show", viewport: { once: true, margin: "-10% 0px" } };
   return (
     <motion.span className={className} initial={reduce ? false : "hide"} {...trigger} aria-label={text} role="text">

@@ -100,7 +100,8 @@ export function AmberField({ className }: { className?: string }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lowPower = (navigator as Navigator & { deviceMemory?: number }).deviceMemory !== undefined &&
       ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 2;
-    const scale = lowPower ? 0.35 : 0.55;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const scale = lowPower ? 0.3 : coarse ? 0.42 : 0.55;
 
     const resize = () => {
       const w = canvas.clientWidth;
