@@ -23,7 +23,7 @@ export default async function CheckoutPage() {
       {zones.length === 0 ? (
         <p className="rounded-3xl bg-paper p-8 text-ink-soft">
           Checkout opens as soon as delivery areas are set up. Please check back shortly, or email{" "}
-          <a className="underline" href="mailto:hello@naziabotanics.com">hello@naziabotanics.com</a>.
+          <a className="underline" href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a>.
         </p>
       ) : (
         <Suspense>

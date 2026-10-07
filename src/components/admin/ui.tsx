@@ -5,7 +5,7 @@ export function PageHead({ eyebrow, title, children }: { eyebrow?: string; title
     <div className="mb-6 flex flex-col justify-between gap-4 md:mb-10 md:flex-row md:items-end">
       <div>
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="mt-1 font-serif text-[2.1rem] leading-tight md:mt-2 md:text-5xl">{title}</h1>
+        <h1 data-page-title className="mt-1 font-serif text-[2.2rem] leading-tight md:mt-2 md:text-5xl">{title}</h1>
       </div>
       {children && <div className="flex flex-wrap gap-3">{children}</div>}
     </div>
@@ -13,14 +13,14 @@ export function PageHead({ eyebrow, title, children }: { eyebrow?: string; title
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-[24px] bg-paper p-6 shadow-[0_1px_0_var(--color-line)] ${className}`}>{children}</div>;
+  return <div className={`rounded-[22px] bg-paper p-5 shadow-[0_1px_0_var(--color-line)] md:rounded-[24px] md:p-6 ${className}`}>{children}</div>;
 }
 
 export function Stat({ label, value, hint, tone }: { label: string; value: string | number; hint?: string; tone?: "warn" | "good" }) {
   return (
     <Card>
       <p className="eyebrow">{label}</p>
-      <p className={`mt-3 font-serif text-4xl ${tone === "warn" ? "text-[#a0441a]" : tone === "good" ? "text-[#46613a]" : ""}`}>{value}</p>
+      <p className={`mt-2 font-serif text-[1.9rem] leading-none md:mt-3 md:text-4xl ${tone === "warn" ? "text-[#a0441a]" : tone === "good" ? "text-[#46613a]" : ""}`}>{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </Card>
   );

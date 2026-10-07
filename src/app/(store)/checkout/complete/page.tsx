@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ClearBag } from "@/components/cart/clear-bag";
 import { DropMascot } from "@/components/drop-mascot";
 import { verifyByReference, verifyTransaction } from "@/lib/flutterwave";
+import { getSettings } from "@/lib/data";
 import { markOrderPaid } from "@/lib/orders";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -36,6 +37,8 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
     }
   }
 
+  const { contactEmail } = await getSettings();
+
   return (
     <section className="wrap flex min-h-[85svh] flex-col items-center justify-center pt-32 pb-20 text-center">
       {paid ? (
@@ -61,7 +64,7 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link href="/shop" className="btn btn-dark">Back to the shop</Link>
-            <a href="mailto:hello@naziabotanics.com" className="btn btn-ghost">Contact us</a>
+            <a href={`mailto:${contactEmail}`} className="btn btn-ghost">Contact us</a>
           </div>
         </>
       )}

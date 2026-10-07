@@ -2,6 +2,7 @@ import Link from "next/link";
 import { OrderBoard, type BoardOrder } from "@/components/admin/order-board";
 import { Card, PageHead, StatusBadge } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
+import { adminHref } from "@/lib/admin-path";
 import { formatNaira } from "@/lib/catalog";
 
 export default async function OrdersPage({ searchParams }: PageProps<"/admin/orders">) {
@@ -36,7 +37,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         <ul className="divide-y divide-line">
           {(done ?? []).map((o) => (
             <li key={o.id}>
-              <Link href={`/admin/orders/${o.id}`} className="flex items-center gap-4 py-3 hover:text-amber">
+              <Link href={adminHref(`/orders/${o.id}`)} className="flex items-center gap-4 py-3 hover:text-amber">
                 <span className="w-24 font-mono text-xs text-muted">{o.ref}</span>
                 <span className="flex-1 truncate">{o.full_name}</span>
                 <span className="hidden text-xs text-muted sm:block">{new Date(o.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</span>

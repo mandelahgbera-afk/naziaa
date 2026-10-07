@@ -1,13 +1,15 @@
-/* Installable app manifest: "Nazia Studio" (home-screen app, standalone, own start screen). */
+import { ADMIN_BASE } from "@/lib/admin-path";
+
+/* Served at the private Studio address only (never reveals it publicly). Installable app manifest: "Nazia Studio" (home-screen app, standalone, own start screen). */
 export function GET() {
   return Response.json(
     {
-      id: "/admin",
+      id: ADMIN_BASE,
       name: "Nazia Studio",
       short_name: "Studio",
       description: "Orders, riders, customers and content for Nazia Botanics.",
-      start_url: "/admin",
-      scope: "/admin",
+      start_url: ADMIN_BASE,
+      scope: ADMIN_BASE,
       display: "standalone",
       orientation: "portrait",
       background_color: "#1f1511",

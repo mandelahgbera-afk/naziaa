@@ -6,11 +6,26 @@ import { DropMascot } from "@/components/drop-mascot";
 import { Wordmark } from "@/components/site/wordmark";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
-export function LoginForm({ area }: { area: "admin" | "rider" }) {
+export function LoginForm({ area, home }: { area: "admin" | "rider"; home: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(params.get("denied") ? "This account doesn’t have access here." : null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function forgot(form: HTMLFormElement | null) {
+    const email = form ? String(new FormData(form).get("email") ?? "").trim() : "";
+    if (!email.includes("@")) {
+      setError("Type your email above, then tap “Forgot password?”.");
+      return;
+    }
+    setError(null);
+    await supabaseBrowser().auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/confirm?next=/account/password`,
+    });
+    // same message either way, so the form never reveals which emails have accounts
+    setNotice("If that email has an account, a reset link is on its way.");
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,7 +38,8 @@ export function LoginForm({ area }: { area: "admin" | "rider" }) {
       setBusy(false);
       return;
     }
-    router.replace(params.get("next") ?? `/${area}`);
+    const next = params.get("next");
+    router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : home);
     router.refresh();
   }
 
@@ -37,7 +53,11 @@ export function LoginForm({ area }: { area: "admin" | "rider" }) {
           <input name="email" type="email" required autoComplete="email" placeholder="Email" className="w-full rounded-2xl border border-line bg-cream px-4 py-3 outline-none focus:border-amber" />
           <input name="password" type="password" required autoComplete="current-password" placeholder="Password" className="w-full rounded-2xl border border-line bg-cream px-4 py-3 outline-none focus:border-amber" />
           {error && <p role="alert" className="text-sm text-[#7a2e12]">{error}</p>}
+          {notice && <p className="text-sm text-[#46613a]">{notice}</p>}
           <button type="submit" disabled={busy} className="btn btn-dark w-full disabled:opacity-60">{busy ? "Signing in…" : "Sign in"}</button>
+          <button type="button" onClick={(e) => forgot(e.currentTarget.form)} className="link-underline mx-auto block text-xs tracking-[0.14em] text-muted uppercase">
+            Forgot password?
+          </button>
         </form>
       </div>
     </div>

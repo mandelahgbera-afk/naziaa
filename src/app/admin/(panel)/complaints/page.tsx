@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ComplaintCard } from "@/components/admin/complaint-card";
 import { Empty, PageHead } from "@/components/admin/ui";
+import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
 
 export default async function ComplaintsPage({ searchParams }: PageProps<"/admin/complaints">) {
@@ -17,8 +18,8 @@ export default async function ComplaintsPage({ searchParams }: PageProps<"/admin
   return (
     <>
       <PageHead eyebrow="Care" title="Complaints">
-        <Link href="/admin/complaints" className={`rounded-full px-4 py-2 text-sm ${show === "open" ? "bg-dark text-paper" : "bg-paper"}`}>Open</Link>
-        <Link href="/admin/complaints?show=resolved" className={`rounded-full px-4 py-2 text-sm ${show === "resolved" ? "bg-dark text-paper" : "bg-paper"}`}>Resolved</Link>
+        <Link href={adminHref("/complaints")} className={`rounded-full px-4 py-2 text-sm ${show === "open" ? "bg-dark text-paper" : "bg-paper"}`}>Open</Link>
+        <Link href={adminHref("/complaints?show=resolved")} className={`rounded-full px-4 py-2 text-sm ${show === "resolved" ? "bg-dark text-paper" : "bg-paper"}`}>Resolved</Link>
       </PageHead>
       {data?.length ? (
         <div className="grid gap-4 xl:grid-cols-2">

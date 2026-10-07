@@ -19,6 +19,7 @@ export type StorefrontSettings = {
   announcements: string[];
   freeDeliveryThresholdKobo: number | null;
   whatsappNumber: string | null;
+  contactEmail: string;
   instagram: string;
   tiktok: string;
 };
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: StorefrontSettings = {
   announcements: ["Small batch · cold-infused in Lagos", "Ships nationwide from Lagos", "Every bottle comes with the 5-minute ritual guide"],
   freeDeliveryThresholdKobo: null,
   whatsappNumber: null,
+  contactEmail: "hello@naziabotanics.com",
   instagram: "https://www.instagram.com/nazia.botanics/",
   tiktok: "https://www.tiktok.com/@nazia_botanics",
 };

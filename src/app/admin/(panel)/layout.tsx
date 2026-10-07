@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/shell";
+import { ADMIN_BASE } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Studio", robots: { index: false } };
@@ -15,7 +16,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <AdminShell
       name={profile.full_name ?? user.email ?? "Team"}
       role={profile.role}
-      badges={{ "/admin/orders": toPack ?? 0, "/admin/complaints": openComplaints ?? 0 }}
+      base={ADMIN_BASE}
+      badges={{ "/orders": toPack ?? 0, "/complaints": openComplaints ?? 0 }}
     >
       {children}
     </AdminShell>

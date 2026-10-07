@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { resolveComplaint, setComplaintStatus } from "@/app/admin/actions";
 import { Card, input } from "./ui";
+import { useAdminHref } from "./base";
 import { useAction } from "./use-action";
 
 type C = {
@@ -21,6 +22,7 @@ type C = {
 const LABEL: Record<string, string> = { late: "Late delivery", damaged: "Arrived damaged", wrong_item: "Wrong item", skin_reaction: "Skin / scalp reaction", missing: "Item missing", other: "Other" };
 
 export function ComplaintCard({ c }: { c: C }) {
+  const admin = useAdminHref();
   const { run, pending } = useAction();
   const [resolution, setResolution] = useState<"refund" | "replacement" | "store_credit" | "none">("replacement");
   const [note, setNote] = useState("");
@@ -33,7 +35,7 @@ export function ComplaintCard({ c }: { c: C }) {
         <div>
           <p className={`eyebrow ${urgent ? "text-[#a0441a]" : ""}`}>{LABEL[c.category] ?? c.category}{urgent ? " · reply today" : ""}</p>
           {c.order && (
-            <Link href={`/admin/orders/${c.order.id}`} className="mt-1 block font-serif text-2xl hover:text-amber">
+            <Link href={admin(`/orders/${c.order.id}`)} className="mt-1 block font-serif text-2xl hover:text-amber">
               {c.order.full_name} · <span className="font-mono text-base">{c.order.ref}</span>
             </Link>
           )}

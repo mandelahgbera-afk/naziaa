@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
    safe zone so it survives Android's circle / squircle crops. */
 export async function GET(req: Request, ctx: RouteContext<"/pwa-icon/[size]">) {
   const { size } = await ctx.params;
-  const px = Math.min(1024, Math.max(48, Number(size) || 512));
+  const px = Math.min(1024, Math.max(16, Number(size) || 512));
   const tone = new URL(req.url).searchParams.get("tone") === "light" ? "light" : "dark";
   const bg = tone === "light" ? "#faf3ec" : "#1f1511";
   const drop = Math.round(px * 0.5);

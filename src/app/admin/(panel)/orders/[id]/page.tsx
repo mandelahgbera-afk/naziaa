@@ -4,6 +4,7 @@ import { OrderActions } from "@/components/admin/order-actions";
 import { Card, PageHead, StatusBadge } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
+import { adminHref } from "@/lib/admin-path";
 import { NEXT_STATUSES, STATUS_LABEL } from "@/lib/order-status";
 
 export default async function OrderDetail({ params }: PageProps<"/admin/orders/[id]">) {
@@ -28,7 +29,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
 
   return (
     <>
-      <Link href="/admin/orders" className="eyebrow link-underline">← Orders</Link>
+      <Link href={adminHref("/orders")} className="eyebrow link-underline">← Orders</Link>
       <PageHead eyebrow={`Order ${o.ref}`} title={o.full_name}>
         <StatusBadge status={o.status} />
       </PageHead>
@@ -142,7 +143,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
                   </li>
                 ))}
               </ul>
-              <Link href="/admin/complaints" className="link-underline mt-3 inline-block text-xs uppercase tracking-[0.16em]">Resolve</Link>
+              <Link href={adminHref("/complaints")} className="link-underline mt-3 inline-block text-xs uppercase tracking-[0.16em]">Resolve</Link>
             </Card>
           )}
         </div>

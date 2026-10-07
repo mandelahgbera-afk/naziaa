@@ -3,56 +3,59 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { AlertIcon, ArrowIcon, ChartIcon, ListIcon, MoreIcon, RiderIcon } from "@/components/icons";
 import { BottomSheet } from "@/components/mobile/bottom-sheet";
 import { Wordmark } from "@/components/site/wordmark";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { haptic } from "@/lib/use-media";
+import { AdminBaseProvider } from "./base";
+import { MobileTopBar, PullToRefresh } from "./mobile-chrome";
 import { Toaster } from "./use-action";
 
 const NAV = [
-  { href: "/admin", label: "Today" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/riders", label: "Riders" },
-  { href: "/admin/complaints", label: "Complaints" },
-  { href: "/admin/customers", label: "Customers" },
-  { href: "/admin/products", label: "Products & batches" },
-  { href: "/admin/hero", label: "Hero video" },
-  { href: "/admin/newsletter", label: "Newsletter" },
-  { href: "/admin/settings", label: "Settings" },
+  { href: "", label: "Today" },
+  { href: "/orders", label: "Orders" },
+  { href: "/riders", label: "Riders" },
+  { href: "/complaints", label: "Complaints" },
+  { href: "/customers", label: "Customers" },
+  { href: "/products", label: "Products & batches" },
+  { href: "/hero", label: "Hero video" },
+  { href: "/newsletter", label: "Newsletter" },
+  { href: "/settings", label: "Settings" },
 ];
 
 /* Phones get the four things a busy day needs in the thumb zone; the rest sits in “More”. */
 const TABS = [
-  { href: "/admin", label: "Today", Icon: ChartIcon },
-  { href: "/admin/orders", label: "Orders", Icon: ListIcon },
-  { href: "/admin/riders", label: "Riders", Icon: RiderIcon },
-  { href: "/admin/complaints", label: "Care", Icon: AlertIcon },
+  { href: "", label: "Today", Icon: ChartIcon },
+  { href: "/orders", label: "Orders", Icon: ListIcon },
+  { href: "/riders", label: "Riders", Icon: RiderIcon },
+  { href: "/complaints", label: "Care", Icon: AlertIcon },
 ];
 
-export function AdminShell({ name, role, badges, children }: { name: string; role: string; badges: Record<string, number>; children: React.ReactNode }) {
+export function AdminShell({ name, role, base, badges, children }: { name: string; role: string; base: string; badges: Record<string, number>; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [more, setMore] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMore(false), [pathname]);
 
-  const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  const to = (href: string) => `${base}${href}`;
+  const isActive = (href: string) => (href === "" ? pathname === base : pathname.startsWith(to(href)));
   const signOut = async () => {
     await supabaseBrowser().auth.signOut();
-    router.replace("/admin/login");
+    router.replace(to("/login"));
   };
-  const current = NAV.find((n) => isActive(n.href))?.label ?? "Studio";
   const restActive = NAV.slice(4).some((n) => isActive(n.href));
 
   return (
+    <AdminBaseProvider value={base}>
     <Toaster>
       <div className="min-h-dvh bg-cream">
         {/* desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 hidden w-64 bg-darker px-4 py-8 lg:block">
           <nav className="flex h-full flex-col">
-            <Link href="/admin" className="px-2 text-paper"><Wordmark /></Link>
+            <Link href={to("")} className="px-2 text-paper"><Wordmark /></Link>
             <p className="mt-2 px-2 text-center text-[0.62rem] tracking-[0.4em] text-paper/40 uppercase">Studio</p>
             <ul className="mt-10 space-y-1">
               {NAV.map((n) => {
@@ -60,7 +63,7 @@ export function AdminShell({ name, role, badges, children }: { name: string; rol
                 return (
                   <li key={n.href}>
                     <Link
-                      href={n.href}
+                      href={to(n.href)}
                       className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition ${isActive(n.href) ? "bg-paper/10 text-paper" : "text-paper/60 hover:bg-paper/5 hover:text-paper"}`}
                     >
                       {n.label}
@@ -81,17 +84,15 @@ export function AdminShell({ name, role, badges, children }: { name: string; rol
           </nav>
         </aside>
 
-        {/* phone top bar: where you are, at a glance */}
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-paper/5 bg-darker/95 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 text-paper backdrop-blur-xl lg:hidden">
-          <div className="flex items-baseline gap-3">
-            <span className="font-serif text-lg tracking-[0.3em]">NAZIA</span>
-            <span className="text-[10px] tracking-[0.3em] text-paper/40 uppercase">{current}</span>
-          </div>
-          <span className="grid size-8 place-items-center rounded-full bg-paper/10 text-sm">{name.charAt(0).toUpperCase()}</span>
-        </header>
+        {/* phone top bar: back button + collapsing title */}
+        <Suspense fallback={<div className="h-14 bg-darker lg:hidden" />}>
+          <MobileTopBar base={base} initial={name.charAt(0).toUpperCase()} onAvatar={() => setMore(true)} />
+        </Suspense>
 
         <main className="pb-tabbar lg:pb-0 lg:pl-64">
-          <div className="mx-auto max-w-[1400px] px-4 py-6 md:px-10 md:py-12">{children}</div>
+          <PullToRefresh>
+            <div className="mx-auto max-w-[1400px] px-4 py-5 md:px-10 md:py-12">{children}</div>
+          </PullToRefresh>
         </main>
 
         {/* phone tab bar */}
@@ -102,7 +103,7 @@ export function AdminShell({ name, role, badges, children }: { name: string; rol
               const badge = badges[href];
               return (
                 <li key={href}>
-                  <Link href={href} onClick={() => haptic()} aria-current={on ? "page" : undefined} className="pressable relative flex h-full flex-col items-center justify-center gap-1">
+                  <Link href={to(href)} onClick={() => haptic()} aria-current={on ? "page" : undefined} className="pressable relative flex h-full flex-col items-center justify-center gap-1">
                     {on && <motion.span layoutId="studio-tab" className="absolute top-2 h-8 w-14 rounded-full bg-paper/10" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
                     <span className={`relative ${on ? "text-honey" : "text-paper/60"}`}>
                       <Icon />
@@ -127,7 +128,7 @@ export function AdminShell({ name, role, badges, children }: { name: string; rol
           <ul className="grid grid-cols-2 gap-3">
             {NAV.slice(4).map((n) => (
               <li key={n.href}>
-                <Link href={n.href} className={`pressable flex h-24 flex-col justify-between rounded-2xl p-4 ${isActive(n.href) ? "bg-paper/15" : "bg-paper/5"}`}>
+                <Link href={to(n.href)} className={`pressable flex h-24 flex-col justify-between rounded-2xl p-4 ${isActive(n.href) ? "bg-paper/15" : "bg-paper/5"}`}>
                   <span className="font-serif text-xl leading-tight">{n.label}</span>
                   <ArrowIcon size={12} className="text-paper/40" />
                 </Link>
@@ -141,5 +142,6 @@ export function AdminShell({ name, role, badges, children }: { name: string; rol
         </BottomSheet>
       </div>
     </Toaster>
+    </AdminBaseProvider>
   );
 }

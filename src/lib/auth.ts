@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import { adminHref } from "./admin-path";
 import { supabaseServer } from "./supabase/server";
 
 export type Role = "customer" | "staff" | "owner" | "rider";
 
 /** Server-side gate for pages and actions. Redirects when the role doesn't fit. */
-export async function requireRole(roles: Role[], loginPath = "/admin/login") {
+export async function requireRole(roles: Role[], loginPath = adminHref("/login")) {
   const supabase = await supabaseServer();
   const {
     data: { user },

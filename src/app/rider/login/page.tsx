@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Rider sign in", robots: { index: fal
 export default function RiderLogin() {
   return (
     <Suspense>
-      <LoginForm area="rider" />
+      <LoginForm area="rider" home="/rider" />
     </Suspense>
   );
 }

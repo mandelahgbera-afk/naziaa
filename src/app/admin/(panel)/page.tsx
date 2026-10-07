@@ -3,6 +3,7 @@ import { Card, Empty, PageHead, Stat, StatusBadge } from "@/components/admin/ui"
 import { RevenueSpark } from "@/components/admin/revenue-spark";
 import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
+import { adminHref } from "@/lib/admin-path";
 import { dashboardWindow } from "@/lib/time";
 
 const PAID = ["paid", "packed", "assigned", "out_for_delivery", "delivered"];
@@ -45,10 +46,10 @@ export default async function Dashboard() {
   return (
     <>
       <PageHead eyebrow={now.toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long" })} title={`${greet}, ${(profile.full_name ?? "").split(" ")[0] || "there"}.`}>
-        <Link href="/admin/orders" className="btn btn-dark">Open the order board</Link>
+        <Link href={adminHref("/orders")} className="btn btn-dark hidden md:inline-flex">Open the order board</Link>
       </PageHead>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
         <Stat label="Today" value={formatNaira(today.reduce((n, o) => n + o.total_kobo, 0))} hint={`${today.length} order${today.length === 1 ? "" : "s"}`} />
         <Stat label="Last 7 days" value={formatNaira(weekRevenue)} hint={`${week.length} orders · avg ${week.length ? formatNaira(Math.round(weekRevenue / week.length)) : "—"}`} />
         <Stat label="Running late" value={lateRes.count ?? 0} tone={(lateRes.count ?? 0) > 0 ? "warn" : "good"} hint="past their promised time" />
@@ -78,7 +79,7 @@ export default async function Dashboard() {
               </li>
             ))}
             <li className="flex items-center justify-between border-t border-line pt-3">
-              <Link href="/admin/complaints" className="text-ink-soft underline-offset-4 hover:underline">Open complaints</Link>
+              <Link href={adminHref("/complaints")} className="text-ink-soft underline-offset-4 hover:underline">Open complaints</Link>
               <span className={`font-serif text-2xl ${(complaintsRes.count ?? 0) > 0 ? "text-[#a0441a]" : ""}`}>{complaintsRes.count ?? 0}</span>
             </li>
           </ul>
@@ -92,7 +93,7 @@ export default async function Dashboard() {
             <ul className="divide-y divide-line">
               {latestRes.data.map((o) => (
                 <li key={o.id}>
-                  <Link href={`/admin/orders/${o.id}`} className="flex items-center justify-between gap-4 py-3 hover:text-amber">
+                  <Link href={adminHref(`/orders/${o.id}`)} className="flex items-center justify-between gap-4 py-3 hover:text-amber">
                     <span className="w-24 font-mono text-xs text-muted">{o.ref}</span>
                     <span className="flex-1 truncate">{o.full_name}</span>
                     <StatusBadge status={o.status} />

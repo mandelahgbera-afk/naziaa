@@ -32,12 +32,12 @@ export function Footer({ products, settings }: { products: Product[]; settings: 
           </FooterCol>
           <FooterCol title="Care">
             <FooterLink href="/track">Track an order</FooterLink>
-            <FooterLink href="mailto:hello@naziabotanics.com">hello@naziabotanics.com</FooterLink>
+            <FooterLink href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</FooterLink>
             {settings.whatsappNumber && (
               <FooterLink href={`https://wa.me/${settings.whatsappNumber}`}>WhatsApp us</FooterLink>
             )}
-            <FooterLink href={settings.instagram}>Instagram</FooterLink>
-            <FooterLink href={settings.tiktok}>TikTok</FooterLink>
+            {settings.instagram && <FooterLink href={settings.instagram}>Instagram</FooterLink>}
+            {settings.tiktok && <FooterLink href={settings.tiktok}>TikTok</FooterLink>}
           </FooterCol>
         </div>
       </div>

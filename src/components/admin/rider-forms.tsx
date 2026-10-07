@@ -1,10 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { createRider, setRiderActive } from "@/app/admin/actions";
+import { BottomSheet } from "@/components/mobile/bottom-sheet";
+import { Fab } from "./mobile-chrome";
 import { input, label } from "./ui";
 import { useAction } from "./use-action";
 
-export function AddRiderForm({ zones }: { zones: { id: string; name: string }[] }) {
+/** Phones: a floating “Add rider” that opens the form in a sheet. */
+export function AddRiderFab({ zones }: { zones: { id: string; name: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Fab label="Add rider" onClick={() => setOpen(true)} />
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={<div><p className="font-serif text-3xl">Add a rider</p><p className="text-sm text-muted">They sign in at /rider with this email and password.</p></div>}>
+        <div className="pb-4">
+          <AddRiderForm zones={zones} onDone={() => setOpen(false)} />
+        </div>
+      </BottomSheet>
+    </>
+  );
+}
+
+export function AddRiderForm({ zones, onDone }: { zones: { id: string; name: string }[]; onDone?: () => void }) {
   const { run, pending } = useAction();
   return (
     <form
@@ -22,7 +40,11 @@ export function AddRiderForm({ zones }: { zones: { id: string; name: string }[] 
             zoneId: String(fd.get("zone")) || null,
             vehicle: String(fd.get("vehicle") ?? ""),
           }),
-        ).then((ok) => ok && form.reset());
+        ).then((ok) => {
+          if (!ok) return;
+          form.reset();
+          onDone?.();
+        });
       }}
     >
       <div><label className={label}>Full name</label><input name="name" required className={input} /></div>

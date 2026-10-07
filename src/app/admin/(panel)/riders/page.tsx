@@ -1,4 +1,4 @@
-import { AddRiderForm, RiderToggle } from "@/components/admin/rider-forms";
+import { AddRiderFab, AddRiderForm, RiderToggle } from "@/components/admin/rider-forms";
 import { RidersLiveMap } from "@/components/admin/riders-live-map";
 import { Card, Empty, PageHead } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
@@ -103,12 +103,13 @@ export default async function RidersPage() {
             )}
           </Card>
         </div>
-        <Card className="self-start">
+        <Card className="hidden self-start lg:block">
           <p className="eyebrow mb-1">Add a rider</p>
           <p className="mb-5 text-sm text-muted">They’ll sign in at <span className="font-mono">/rider</span> with this email and password.</p>
           <AddRiderForm zones={zones ?? []} />
         </Card>
       </div>
+      <AddRiderFab zones={zones ?? []} />
     </>
   );
 }

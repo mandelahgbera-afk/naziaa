@@ -16,8 +16,8 @@ export default async function Home() {
     "@type": "Organization",
     name: "Nazia Botanics",
     url: process.env.NEXT_PUBLIC_SITE_URL,
-    sameAs: [settings.instagram, settings.tiktok],
-    email: "hello@naziabotanics.com",
+    sameAs: [settings.instagram, settings.tiktok].filter(Boolean),
+    email: settings.contactEmail,
   };
 
   return (
@@ -31,7 +31,7 @@ export default async function Home() {
       <IngredientRail ingredients={INGREDIENTS} />
       <RitualTeaser />
       <JournalTeaser articles={ARTICLES} />
-      <SocialBand instagram={settings.instagram} />
+      <SocialBand instagram={settings.instagram} tiktok={settings.tiktok} />
     </>
   );
 }

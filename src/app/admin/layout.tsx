@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { adminHref } from "@/lib/admin-path";
 
 export const metadata: Metadata = {
-  manifest: "/studio.webmanifest",
+  manifest: adminHref("/app-manifest"),
   appleWebApp: { capable: true, title: "Studio", statusBarStyle: "black-translucent" },
 };
 

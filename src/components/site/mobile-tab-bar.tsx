@@ -21,7 +21,7 @@ const MORE = [
   { href: "/track", label: "Track an order", hint: "Where’s my ritual?" },
 ];
 
-export function MobileTabBar({ whatsapp, instagram }: { whatsapp: string | null; instagram: string }) {
+export function MobileTabBar({ whatsapp, instagram, tiktok, email }: { whatsapp: string | null; instagram: string; tiktok: string; email: string }) {
   const pathname = usePathname();
   const lines = useCart((s) => s.lines);
   const setOpen = useCart((s) => s.setOpen);
@@ -103,12 +103,18 @@ export function MobileTabBar({ whatsapp, instagram }: { whatsapp: string | null;
         <div className="mt-4 grid grid-cols-2 gap-3 pb-2">
           {whatsapp && (
             <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="pressable flex items-center justify-center gap-2 rounded-2xl bg-cream-deep py-4 text-sm">
-              <ChatIcon size={18} /> WhatsApp us
+              <ChatIcon size={18} /> WhatsApp
             </a>
           )}
-          <a href={instagram} target="_blank" rel="noreferrer" className={`pressable flex items-center justify-center rounded-2xl bg-cream-deep py-4 text-sm ${whatsapp ? "" : "col-span-2"}`}>
-            @nazia.botanics
-          </a>
+          {email && (
+            <a href={`mailto:${email}`} className="pressable flex items-center justify-center rounded-2xl bg-cream-deep py-4 text-sm">Email us</a>
+          )}
+          {instagram && (
+            <a href={instagram} target="_blank" rel="noreferrer" className="pressable flex items-center justify-center rounded-2xl bg-cream-deep py-4 text-sm">Instagram</a>
+          )}
+          {tiktok && (
+            <a href={tiktok} target="_blank" rel="noreferrer" className="pressable flex items-center justify-center rounded-2xl bg-cream-deep py-4 text-sm">TikTok</a>
+          )}
         </div>
       </BottomSheet>
     </>

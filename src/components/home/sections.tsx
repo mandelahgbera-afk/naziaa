@@ -8,6 +8,7 @@ import { MobileRail } from "@/components/mobile/mobile-rail";
 import { ProductArchRail } from "./product-arch-rail";
 import { formatNaira, PILLARS, TRUST, type Product } from "@/lib/catalog";
 import type { Article } from "@/lib/journal";
+import { handleFrom } from "@/lib/social";
 
 export function TrustMarquee() {
   const row = [...TRUST, ...TRUST];
@@ -236,14 +237,20 @@ export function JournalTeaser({ articles }: { articles: Article[] }) {
   );
 }
 
-export function SocialBand({ instagram }: { instagram: string }) {
+export function SocialBand({ instagram, tiktok }: { instagram: string; tiktok: string }) {
   return (
     <section className="wrap py-24 text-center md:py-32">
       <p className="eyebrow">Join the community</p>
-      <a href={instagram} target="_blank" rel="noreferrer" className="group mt-6 inline-block">
-        <span className="font-serif text-[clamp(2.6rem,8vw,7rem)] leading-none italic transition duration-700 group-hover:text-amber">@nazia.botanics</span>
-      </a>
-      <p className="mx-auto mt-6 max-w-md text-ink-soft">Weekly wellness routines, slow mornings and new batches — on Instagram and TikTok.</p>
+      {instagram && (
+        <a href={instagram} target="_blank" rel="noreferrer" className="group mt-6 inline-block">
+          <span className="font-serif text-[clamp(2.6rem,8vw,7rem)] leading-none italic transition duration-700 group-hover:text-amber">{handleFrom(instagram)}</span>
+        </a>
+      )}
+      <p className="mx-auto mt-6 max-w-md text-ink-soft">Weekly wellness routines, slow mornings and new batches.</p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        {instagram && <a href={instagram} target="_blank" rel="noreferrer" className="btn btn-ghost pressable">Instagram</a>}
+        {tiktok && <a href={tiktok} target="_blank" rel="noreferrer" className="btn btn-ghost pressable">TikTok · {handleFrom(tiktok)}</a>}
+      </div>
     </section>
   );
 }

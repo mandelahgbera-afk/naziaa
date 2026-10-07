@@ -9,6 +9,7 @@ import { formatNaira } from "@/lib/catalog";
 import { STATUS_LABEL } from "@/lib/order-status";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { haptic } from "@/lib/use-media";
+import { useAdminHref } from "./base";
 import { useAction } from "./use-action";
 
 export type BoardOrder = {
@@ -53,6 +54,7 @@ function dueLabel(promised: string | null, now: number) {
 }
 
 export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: { id: string; name: string }[] }) {
+  const admin = useAdminHref();
   const router = useRouter();
   const now = useNow();
   const { run, pending } = useAction();
@@ -87,7 +89,7 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
           <ul className="mt-3 space-y-2">
             {failed.map((o) => (
               <li key={o.id} className="flex flex-wrap items-center justify-between gap-3">
-                <Link href={`/admin/orders/${o.id}`} className="underline-offset-4 hover:underline">{o.ref} · {o.full_name} — delivery failed</Link>
+                <Link href={admin(`/orders/${o.id}`)} className="underline-offset-4 hover:underline">{o.ref} · {o.full_name} — delivery failed</Link>
                 <RiderSelect riders={riders} disabled={pending} onPick={(rid) => run(() => assignRider(o.id, rid), "Re-assigned")} label="Re-assign" />
               </li>
             ))}
@@ -148,7 +150,7 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
                         exit={{ opacity: 0, scale: 0.96 }}
                         className={`rounded-2xl bg-paper p-4 shadow-[0_1px_0_var(--color-line)] ${due?.late ? "ring-2 ring-[#e3a07f]" : ""}`}
                       >
-                        <Link href={`/admin/orders/${o.id}`} className="block">
+                        <Link href={admin(`/orders/${o.id}`)} className="block">
                           <div className="flex items-center justify-between">
                             <span className="font-mono text-xs text-muted">{o.ref}</span>
                             {due && <span className={`text-[11px] ${due.late ? "font-normal text-[#a0441a]" : "text-muted"}`}>{due.text}</span>}
@@ -190,7 +192,8 @@ export function OrderBoard({ orders, riders }: { orders: BoardOrder[]; riders: {
 }
 
 function RiderSelect({ riders, onPick, disabled, label }: { riders: { id: string; name: string }[]; onPick: (id: string) => void; disabled?: boolean; label: string }) {
-  if (!riders.length) return <Link href="/admin/riders" className="block text-center text-xs text-amber underline">Add a rider first</Link>;
+  const admin = useAdminHref();
+  if (!riders.length) return <Link href={admin("/riders")} className="block text-center text-xs text-amber underline">Add a rider first</Link>;
   return (
     <select
       disabled={disabled}

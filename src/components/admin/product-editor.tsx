@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { BottomSheet } from "@/components/mobile/bottom-sheet";
+import { formatNaira } from "@/lib/catalog";
 import { adjustBatch, createBatch, updateProduct } from "@/app/admin/actions";
 import { Card, input, label } from "./ui";
 import { useAction } from "./use-action";
@@ -26,17 +28,55 @@ type P = {
 };
 
 export function ProductEditor({ product: p }: { product: P }) {
+  const [sheet, setSheet] = useState<null | "details" | "batches">(null);
+  const stock = p.batches.reduce((n, b) => n + b.qty_available, 0);
+  const latest = [...p.batches].sort((a, b) => b.infused_on.localeCompare(a.infused_on))[0];
+  return (
+    <>
+      {/* desktop: everything side by side */}
+      <Card className="hidden gap-8 md:grid lg:grid-cols-[180px_1fr_360px]">
+        <div className="relative hidden aspect-[3/4] overflow-hidden rounded-t-full rounded-b-2xl lg:block" style={{ background: `linear-gradient(180deg, ${p.tint_top}, ${p.tint_bottom})` }}>
+          {p.cutout_url && <Image src={p.cutout_url} alt="" fill sizes="180px" className="object-contain p-4" />}
+        </div>
+        <DetailsForm p={p} />
+        <BatchesPanel p={p} />
+      </Card>
+
+      {/* phones: a calm summary card; editing happens in sheets */}
+      <Card className="md:hidden">
+        <div className="flex gap-4">
+          <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-t-full rounded-b-xl" style={{ background: `linear-gradient(180deg, ${p.tint_top}, ${p.tint_bottom})` }}>
+            {p.cutout_url && <Image src={p.cutout_url} alt="" fill sizes="80px" className="object-contain p-1.5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-serif text-2xl leading-tight">{p.name}</p>
+            <p className="mt-1 text-sm">{formatNaira(p.price_kobo)} · {p.size_ml}ml</p>
+            <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+              <span className={`rounded-full px-2 py-0.5 ${p.status === "active" ? "bg-[#e6efdc] text-[#46613a]" : "bg-cream-deep text-muted"}`}>{p.status === "active" ? "On the shop" : p.status === "draft" ? "Hidden" : "Archived"}</span>
+              <span className="rounded-full bg-cream-deep px-2 py-0.5 text-ink-soft">{p.track_inventory ? `${stock} in stock` : "Always available"}</span>
+              {latest && <span className="rounded-full bg-cream-deep px-2 py-0.5 text-ink-soft">Batch {latest.code}</span>}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setSheet("details")} className="pressable rounded-2xl bg-cream py-3 text-sm">Edit details</button>
+          <button type="button" onClick={() => setSheet("batches")} className="pressable rounded-2xl bg-cream py-3 text-sm">Batches & stock</button>
+        </div>
+      </Card>
+      <BottomSheet open={sheet === "details"} onClose={() => setSheet(null)} title={<p className="font-serif text-3xl">{p.name}</p>}>
+        <div className="pb-4"><DetailsForm p={p} onSaved={() => setSheet(null)} /></div>
+      </BottomSheet>
+      <BottomSheet open={sheet === "batches"} onClose={() => setSheet(null)} title={<p className="font-serif text-3xl">Batches · {p.name}</p>}>
+        <div className="pb-4"><BatchesPanel p={p} /></div>
+      </BottomSheet>
+    </>
+  );
+}
+
+function DetailsForm({ p, onSaved }: { p: P; onSaved?: () => void }) {
   const { run, pending } = useAction();
   const [track, setTrack] = useState(p.track_inventory);
-  const batches = [...p.batches].sort((a, b) => b.infused_on.localeCompare(a.infused_on));
-  const stock = batches.reduce((n, b) => n + b.qty_available, 0);
-
   return (
-    <Card className="grid gap-8 lg:grid-cols-[180px_1fr_360px]">
-      <div className="relative hidden aspect-[3/4] overflow-hidden rounded-t-full rounded-b-2xl lg:block" style={{ background: `linear-gradient(180deg, ${p.tint_top}, ${p.tint_bottom})` }}>
-        {p.cutout_url && <Image src={p.cutout_url} alt="" fill sizes="180px" className="object-contain p-4" />}
-      </div>
-
       <form
         className="grid gap-3 sm:grid-cols-2"
         onSubmit={(e) => {
@@ -54,7 +94,7 @@ export function ProductEditor({ product: p }: { product: P }) {
               trackInventory: track,
               lowStockThreshold: Number(fd.get("low") ?? 10),
             }),
-          );
+          ).then((ok) => ok && onSaved?.());
         }}
       >
         <div className="sm:col-span-2 flex items-center justify-between">
@@ -84,7 +124,14 @@ export function ProductEditor({ product: p }: { product: P }) {
           <button type="submit" disabled={pending} className="btn btn-dark disabled:opacity-50">Save product</button>
         </div>
       </form>
+  );
+}
 
+function BatchesPanel({ p }: { p: P }) {
+  const { run, pending } = useAction();
+  const batches = [...p.batches].sort((a, b) => b.infused_on.localeCompare(a.infused_on));
+  const stock = batches.reduce((n, b) => n + b.qty_available, 0);
+  return (
       <div>
         <div className="flex items-baseline justify-between">
           <p className="eyebrow">Batches</p>
@@ -133,6 +180,5 @@ export function ProductEditor({ product: p }: { product: P }) {
           <button type="submit" disabled={pending} className="col-span-2 rounded-full bg-dark py-2 text-xs tracking-[0.14em] text-paper uppercase disabled:opacity-50">Add batch</button>
         </form>
       </div>
-    </Card>
   );
 }

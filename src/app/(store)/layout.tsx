@@ -16,7 +16,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <Header announcements={settings.announcements} />
       <main id="main">{children}</main>
       <Footer products={products} settings={settings} />
-      <MobileTabBar whatsapp={settings.whatsappNumber} instagram={settings.instagram} />
+      <MobileTabBar whatsapp={settings.whatsappNumber} instagram={settings.instagram} tiktok={settings.tiktok} email={settings.contactEmail} />
       <CartDrawer products={products} freeDeliveryThresholdKobo={settings.freeDeliveryThresholdKobo} />
     </div>
   );

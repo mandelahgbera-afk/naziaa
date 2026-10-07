@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, Empty, PageHead } from "@/components/admin/ui";
 import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
+import { adminHref } from "@/lib/admin-path";
 import { daysSince } from "@/lib/time";
 
 const SEGMENTS = [
@@ -45,7 +46,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
       <PageHead eyebrow="Relationships" title="Customers" />
       <div className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
         {SEGMENTS.map((s) => (
-          <Link key={s.id} href={`/admin/customers?seg=${s.id}`} className={`shrink-0 rounded-full px-4 py-2 text-sm transition ${seg === s.id ? "bg-dark text-paper" : "bg-paper hover:bg-cream-deep"}`}>
+          <Link key={s.id} href={adminHref(`/customers?seg=${s.id}`)} className={`shrink-0 rounded-full px-4 py-2 text-sm transition ${seg === s.id ? "bg-dark text-paper" : "bg-paper hover:bg-cream-deep"}`}>
             {s.label}
           </Link>
         ))}

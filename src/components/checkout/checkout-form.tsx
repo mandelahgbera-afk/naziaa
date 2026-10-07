@@ -10,6 +10,7 @@ import { DropMascot } from "@/components/drop-mascot";
 import { CheckIcon, RiderIcon } from "@/components/icons";
 import { cartSubtotal, useCart, type CartLine } from "@/lib/cart";
 import { formatNaira, type Product } from "@/lib/catalog";
+import { speedLabel } from "@/lib/delivery";
 import type { Zone } from "@/lib/orders";
 
 const PinMap = dynamic(() => import("@/components/maps/pin-map").then((m) => m.PinMap), { ssr: false });
@@ -61,7 +62,7 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
   const fee = zone ? (freeDelivery ? 0 : zone.fee_kobo) : 0;
   const total = subtotal + fee;
 
-  const eta = zone ? etaLabel(zone.eta_min_hours, zone.eta_max_hours) : "";
+  const eta = zone ? speedLabel(zone.eta_min_hours, zone.eta_max_hours).toLowerCase() : "";
 
   // Save the bag against the email as soon as we have one (abandoned-cart recovery)
   const saveSession = async (form: HTMLFormElement) => {
@@ -229,7 +230,7 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
               </button>
             ))}
           </div>
-          {zone && <p className="mt-4 text-sm text-ink-soft">Arrives in about {eta} after payment. You’ll get a delivery code to share with your rider.</p>}
+          {zone && <p className="mt-4 text-sm text-ink-soft">Arrives {eta} after payment. You’ll get a delivery code to share with your rider.</p>}
         </Step>
 
         <Step n={4} title="A finishing touch">
@@ -307,13 +308,6 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
       </div>
     </form>
   );
-}
-
-function etaLabel(minHours: number, maxHours: number) {
-  const d = (h: number) => Math.max(1, Math.round(h / 24));
-  const a = d(minHours);
-  const b = d(maxHours);
-  return a === b ? `${a} day${a > 1 ? "s" : ""}` : `${a}–${b} days`;
 }
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
