@@ -11,7 +11,7 @@ function resend() {
   return key ? new Resend(key) : null;
 }
 
-export async function sendEmail({ to, subject, html, tag }: { to: string; subject: string; html: string; tag: string }) {
+export async function sendEmail({ to, subject, html, tag, headers }: { to: string; subject: string; html: string; tag: string; headers?: Record<string, string> }) {
   const client = resend();
   if (!client) {
     console.warn(`[email] RESEND_API_KEY missing — skipped "${subject}" to ${to}`);
@@ -19,9 +19,12 @@ export async function sendEmail({ to, subject, html, tag }: { to: string; subjec
   }
   const { error } = await client.emails.send({
     from: process.env.EMAIL_FROM ?? "Nazia Botanics <onboarding@resend.dev>",
+    // customers who hit “reply” reach a real inbox, not the no-reply sending address
+    ...(process.env.EMAIL_REPLY_TO ? { replyTo: process.env.EMAIL_REPLY_TO } : {}),
     to,
     subject,
     html,
+    ...(headers ? { headers } : {}),
     tags: [{ name: "type", value: tag }],
   });
   if (error) console.error("[email] send failed", error);

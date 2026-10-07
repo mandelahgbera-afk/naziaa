@@ -349,8 +349,10 @@ export async function sendNewsletter(subject: string, bodyText: string, testOnly
     if (error) throw error;
     let sent = 0;
     for (const s of subs ?? []) {
-      const html = newsletterEmail(subject, bodyText, unsubscribeUrl(s.email));
-      const r = await sendEmail({ to: s.email, subject, html, tag: "newsletter" });
+      const unsub = unsubscribeUrl(s.email);
+      const html = newsletterEmail(subject, bodyText, unsub);
+      // one-click unsubscribe headers: required by Gmail and Yahoo for bulk senders
+      const r = await sendEmail({ to: s.email, subject, html, tag: "newsletter", headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
       if (!r.skipped && !r.error) sent++;
       // stay under the email provider rate limit
       await new Promise((res) => setTimeout(res, 550));
