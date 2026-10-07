@@ -36,7 +36,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Wordmark size={26} />
           <div style={{ fontFamily: "Jost", fontSize: 20, letterSpacing: 4, color: a.hue, textTransform: "uppercase" }}>
-            {a.category} · {a.minutes} min read
+            {`${a.category} · ${a.minutes} min read`}
           </div>
         </div>
         <div style={{ fontFamily: "Cormorant", fontSize: a.title.length > 60 ? 70 : 82, lineHeight: 1.02, letterSpacing: -1.2, maxWidth: 960, display: "flex" }}>{a.title}</div>

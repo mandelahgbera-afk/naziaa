@@ -23,7 +23,8 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
   return {
     title: `${p.name} — ${p.subtitle}`,
     description: p.description,
-    openGraph: { images: [p.square] },
+    alternates: { canonical: `/products/${p.slug}` },
+    openGraph: { type: "website", url: `/products/${p.slug}`, title: `${p.name} · Nazia Botanics`, description: p.description },
   };
 }
 
@@ -33,20 +34,38 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   if (!product) notFound();
   const others = all.filter((p) => p.slug !== product.slug);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    image: product.square,
-    brand: { "@type": "Brand", name: "Nazia Botanics" },
-    offers: {
-      "@type": "Offer",
-      price: product.priceKobo / 100,
-      priceCurrency: "NGN",
-      availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const url = `${site}/products/${product.slug}`;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description: product.description,
+      sku: product.slug,
+      url,
+      image: [`${site}${product.square}`, `${site}${product.cutout}`],
+      brand: { "@type": "Brand", name: "Nazia Botanics" },
+      offers: {
+        "@type": "Offer",
+        url,
+        price: product.priceKobo / 100,
+        priceCurrency: "NGN",
+        itemCondition: "https://schema.org/NewCondition",
+        availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        seller: { "@type": "Organization", name: "Nazia Botanics" },
+      },
     },
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: site || "/" },
+        { "@type": "ListItem", position: 2, name: "Shop", item: `${site}/shop` },
+        { "@type": "ListItem", position: 3, name: product.name, item: url },
+      ],
+    },
+  ];
 
   return (
     <>

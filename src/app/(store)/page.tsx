@@ -11,14 +11,34 @@ export const revalidate = 300;
 export default async function Home() {
   const [products, media, settings] = await Promise.all([getProducts(), getHeroMedia(), getSettings()]);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Nazia Botanics",
-    url: process.env.NEXT_PUBLIC_SITE_URL,
-    sameAs: [settings.instagram, settings.tiktok].filter(Boolean),
-    email: settings.contactEmail,
-  };
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${site}/#organization`,
+      name: "Nazia Botanics",
+      url: site,
+      logo: `${site}/pwa-icon/512`,
+      image: `${site}/opengraph-image`,
+      description: "Small-batch, cold-infused botanical hair and scalp oils made in Lagos.",
+      email: settings.contactEmail,
+      address: { "@type": "PostalAddress", addressLocality: "Lagos", addressCountry: "NG" },
+      sameAs: [settings.instagram, settings.tiktok].filter(Boolean),
+      contactPoint: [
+        { "@type": "ContactPoint", contactType: "customer service", email: settings.contactEmail, areaServed: "NG", availableLanguage: ["en"] },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${site}/#website`,
+      name: "Nazia Botanics",
+      url: site,
+      publisher: { "@id": `${site}/#organization` },
+      inLanguage: "en-NG",
+    },
+  ];
 
   return (
     <>

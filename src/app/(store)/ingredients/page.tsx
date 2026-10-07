@@ -5,6 +5,7 @@ import { Reveal, RiseWords } from "@/components/motion";
 import { INGREDIENTS } from "@/lib/catalog";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/ingredients" },
   title: "Ingredient library",
   description: "Rosemary, ashwagandha, hibiscus and bhringraj — the four botanicals in every Nazia formula, and what each one does for your scalp.",
 };

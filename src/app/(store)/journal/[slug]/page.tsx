@@ -11,7 +11,14 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/journal/[slug]">): Promise<Metadata> {
   const a = getArticle((await params).slug);
-  return a ? { title: a.title, description: a.excerpt, openGraph: { type: "article" } } : {};
+  return a
+    ? {
+        title: a.title,
+        description: a.excerpt,
+        alternates: { canonical: `/journal/${a.slug}` },
+        openGraph: { type: "article", url: `/journal/${a.slug}`, title: a.title, description: a.excerpt, section: a.category },
+      }
+    : {};
 }
 
 export default async function ArticlePage({ params }: PageProps<"/journal/[slug]">) {
@@ -20,8 +27,33 @@ export default async function ArticlePage({ params }: PageProps<"/journal/[slug]
   const next = article.next ? getArticle(article.next.slug) : null;
   const stepNumbers = article.body.reduce<number[]>((acc, b) => [...acc, (acc.at(-1) ?? 0) + (b.t === "step" ? 1 : 0)], []);
 
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: article.title,
+      description: article.excerpt,
+      articleSection: article.category,
+      url: `${site}/journal/${article.slug}`,
+      image: `${site}/opengraph-image`,
+      author: { "@type": "Organization", name: "Nazia Botanics" },
+      publisher: { "@type": "Organization", name: "Nazia Botanics", logo: { "@type": "ImageObject", url: `${site}/pwa-icon/512` } },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: site || "/" },
+        { "@type": "ListItem", position: 2, name: "Journal", item: `${site}/journal` },
+        { "@type": "ListItem", position: 3, name: article.title, item: `${site}/journal/${article.slug}` },
+      ],
+    },
+  ];
+
   return (
     <article>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <ReadingProgress />
       <header className="wrap pt-28 md:pt-48">
         <Link href="/journal" className="eyebrow link-underline">← The journal</Link>

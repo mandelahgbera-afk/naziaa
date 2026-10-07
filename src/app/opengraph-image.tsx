@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- the share-image renderer only accepts plain <img> */
 import { ImageResponse } from "next/og";
 import { OG_SIZE, Wordmark, ogFonts, publicPng } from "@/lib/og";
 
@@ -21,13 +22,16 @@ export default async function Image() {
           position: "relative",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "64px 0 64px 72px", width: 700 }}>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "64px 0 64px 72px", width: 760 }}>
           <div style={{ display: "flex" }}>
             <Wordmark color="#fffaf5" size={30} />
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontFamily: "Cormorant", fontSize: 86, lineHeight: 0.98, letterSpacing: -1.5, display: "flex", flexWrap: "wrap" }}>
-              Healthy hair starts from the&nbsp;<span style={{ fontStyle: "italic" }}>root.</span>
+            <div style={{ fontFamily: "Cormorant", fontSize: 86, lineHeight: 0.98, letterSpacing: -1.5, display: "flex", flexDirection: "column" }}>
+              <span>Healthy hair starts</span>
+              <span style={{ display: "flex" }}>
+                from the&nbsp;<span style={{ fontStyle: "italic" }}>root.</span>
+              </span>
             </div>
             <div style={{ fontFamily: "Jost", fontSize: 24, marginTop: 26, opacity: 0.85, letterSpacing: 0.5 }}>
               Small-batch botanical hair &amp; scalp oils · Lagos

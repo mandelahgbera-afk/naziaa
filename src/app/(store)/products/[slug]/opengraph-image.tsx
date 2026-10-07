@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- the share-image renderer only accepts plain <img> */
 import { ImageResponse } from "next/og";
 import { formatNaira, PRODUCTS } from "@/lib/catalog";
 import { getProduct } from "@/lib/data";
@@ -48,7 +49,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontFamily: "Cormorant", fontSize: 46 }}>{formatNaira(p.priceKobo)}</div>
             <div style={{ fontFamily: "Jost", fontSize: 20, background: "#3a2a22", color: "#fffaf5", padding: "14px 28px", borderRadius: 999, letterSpacing: 3 }}>
-              {p.sizeMl}ML · SMALL BATCH
+              {`${p.sizeMl}ML · SMALL BATCH`}
             </div>
           </div>
         </div>

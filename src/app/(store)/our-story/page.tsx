@@ -5,6 +5,7 @@ import { Pillars } from "@/components/home/sections";
 import { Parallax, Reveal, RiseWords, ScrollInk } from "@/components/motion";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/our-story" },
   title: "Our story",
   description: "Nazia began as one woman’s search for a real answer to brittle, stuck hair — and became a small-batch botanical brand made in Lagos.",
 };

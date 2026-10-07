@@ -9,6 +9,7 @@ import { getProducts } from "@/lib/data";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/shop" },
   title: "Shop the oils",
   description: "Two small-batch, cold-infused botanical hair and scalp oils, handmade in Lagos.",
 };
