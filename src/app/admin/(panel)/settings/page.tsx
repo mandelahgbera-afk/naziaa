@@ -1,30 +1,35 @@
 import Link from "next/link";
 import { ChangePasswordForm } from "@/components/admin/change-password";
 import { DeliveryManager, type Zone } from "@/components/admin/delivery-manager";
+import { PracticeData } from "@/components/admin/practice-data";
 import { AnnouncementsForm, ContactForm, FreeDeliveryForm, NudgeForm } from "@/components/admin/settings-forms";
 import { Card, PageHead } from "@/components/admin/ui";
 import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
 import { getProducts, getSettings } from "@/lib/data";
+import { demoCounts } from "@/lib/demo";
 
 const TABS = [
   { id: "delivery", label: "Delivery" },
   { id: "storefront", label: "Storefront" },
   { id: "contact", label: "Contact & social" },
   { id: "account", label: "Your sign-in" },
+  { id: "practice", label: "Practice data" },
 ] as const;
 
 export default async function SettingsPage({ searchParams }: PageProps<"/admin/settings">) {
-  const { supabase, user } = await requireStaff();
+  const { supabase, user, profile } = await requireStaff();
   const tabParam = (await searchParams).tab;
   const tab = TABS.find((t) => t.id === tabParam)?.id ?? "delivery";
 
-  const [{ data: store }, { data: zones }, defaults, products] = await Promise.all([
+  const [{ data: store }, { data: zones }, defaults, products, demo] = await Promise.all([
     supabase.from("site_settings").select("value").eq("key", "storefront").maybeSingle(),
     supabase.from("delivery_zones").select("id, name, description, fee_kobo, eta_min_hours, eta_max_hours, uses_courier, is_active").order("sort"),
     getSettings(),
     getProducts(),
+    demoCounts().catch(() => null),
   ]);
+  const demoTotal = demo ? Object.values(demo).reduce((a, b) => a + b, 0) : 0;
   const v = (store?.value ?? {}) as { announcements?: string[]; freeDeliveryThresholdKobo?: number | null; whatsappNumber?: string | null; contactEmail?: string; instagram?: string; tiktok?: string };
   const unpriced = (zones ?? []).filter((z) => z.is_active && z.fee_kobo === 0).length;
 
@@ -42,7 +47,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
               className={`relative shrink-0 rounded-xl px-4 py-2 text-sm transition ${tab === t.id ? "bg-paper shadow-[0_1px_0_var(--color-line)]" : "text-ink-soft hover:text-ink"}`}
             >
               {t.label}
-              {t.id === "delivery" && unpriced > 0 && <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-[#c4501f]" />}
+              {((t.id === "delivery" && unpriced > 0) || (t.id === "practice" && demoTotal > 0)) && <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-[#c4501f]" />}
             </Link>
           ))}
         </div>
@@ -91,6 +96,14 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
             <p className="eyebrow mb-1">Your sign-in</p>
             <p className="mb-5 text-sm text-muted">Signed in as {user.email}. Choose a new password any time.</p>
             <ChangePasswordForm />
+          </Card>
+        )}
+
+        {tab === "practice" && (
+          <Card>
+            <p className="eyebrow">Practice data</p>
+            <h2 className="mt-1 mb-4 font-serif text-3xl">Clear the rehearsal before opening night.</h2>
+            {demo ? <PracticeData counts={demo} canClear={profile.role === "owner"} /> : <p className="text-sm text-muted">Couldn’t check for practice data right now — refresh to try again.</p>}
           </Card>
         )}
       </div>

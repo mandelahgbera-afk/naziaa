@@ -1,42 +1,20 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
-import { useEffect } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { AmberField } from "@/components/hero/amber-field";
 import { HeroVideo } from "@/components/hero/hero-video";
 import { RiseWords } from "@/components/motion";
-import type { Product } from "@/lib/catalog";
 import type { HeroMedia } from "@/lib/data";
 import { splitEmphasis, type Copy } from "@/lib/content";
 
-
-export function Hero({ media, products, c }: { media: HeroMedia; products: Product[]; c: Copy }) {
+export function Hero({ media, c }: { media: HeroMedia; c: Copy }) {
   const headline = splitEmphasis(c["home.hero.headline"]);
   const reduce = useReducedMotion();
   const { scrollY } = useScroll();
   const contentY = useTransform(scrollY, [0, 900], [0, 180]);
   const contentO = useTransform(scrollY, [0, 520], [1, 0]);
   const mediaScale = useTransform(scrollY, [0, 900], [1, 1.12]);
-  const bottlesY = useTransform(scrollY, [0, 900], [0, -120]);
-
-  // Bottles lean gently toward the pointer
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rx = useSpring(useTransform(my, [-1, 1], [5, -5]), { stiffness: 60, damping: 18 });
-  const ry = useSpring(useTransform(mx, [-1, 1], [-8, 8]), { stiffness: 60, damping: 18 });
-  useEffect(() => {
-    if (reduce) return;
-    const onMove = (e: PointerEvent) => {
-      mx.set((e.clientX / window.innerWidth) * 2 - 1);
-      my.set((e.clientY / window.innerHeight) * 2 - 1);
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, [mx, my, reduce]);
-
-  const [front, back] = products;
 
   return (
     <section className="relative h-[100svh] min-h-[680px] overflow-hidden bg-darker" aria-label="Introduction">
@@ -54,7 +32,7 @@ export function Hero({ media, products, c }: { media: HeroMedia; products: Produ
       )}
 
       <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center">
-        <motion.div className="relative z-10 md:col-span-7" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
+        <motion.div className="relative z-10 md:col-span-8" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
           <p className="eyebrow fade-up text-paper/75" style={{ ["--d" as string]: "0.2s" }}>
             {c["home.hero.eyebrow"]}
           </p>
@@ -69,23 +47,6 @@ export function Hero({ media, products, c }: { media: HeroMedia; products: Produ
             <Link href="/ritual" className="btn btn-light flex-1 px-5 sm:flex-none sm:px-8">{c["home.hero.cta2"]}</Link>
           </div>
         </motion.div>
-
-        {front && back && (
-          <motion.div
-            className="pointer-events-none relative mx-auto mt-6 h-[30svh] w-[72%] max-w-[340px] md:col-span-5 md:mx-0 md:mt-0 md:h-[74vh] md:w-auto md:max-w-none"
-            style={reduce ? undefined : { y: bottlesY, rotateX: rx, rotateY: ry, transformPerspective: 1200 }}
-          >
-            <div className="fade-up absolute inset-0" style={{ ["--d" as string]: "0.4s" }}>
-            <div className="absolute inset-[12%] rounded-full bg-honey/40 blur-[90px]" />
-            <div className="absolute top-[10%] left-[8%] h-[78%] w-[42%] animate-float [animation-delay:-3s]">
-              <Image src={back.cutout} alt={back.name} fill preload sizes="(min-width: 768px) 18vw, 40vw" className="object-contain opacity-90 drop-shadow-[0_40px_40px_rgba(0,0,0,.45)]" />
-            </div>
-            <div className="absolute top-0 right-[6%] h-[96%] w-[48%] animate-float">
-              <Image src={front.cutout} alt={front.name} fill preload fetchPriority="high" sizes="(min-width: 768px) 22vw, 50vw" className="object-contain drop-shadow-[0_50px_50px_rgba(0,0,0,.5)]" />
-            </div>
-            </div>
-          </motion.div>
-        )}
       </div>
 
       <motion.div

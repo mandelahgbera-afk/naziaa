@@ -543,3 +543,17 @@ export async function saveSiteWords(changes: Record<string, string>): Promise<Re
     return fail(e);
   }
 }
+
+// ─── Practice data ───────────────────────────────────────────────────────────
+export async function clearPracticeData(): Promise<Result> {
+  try {
+    const { user } = await requireOwner();
+    const { clearDemo } = await import("@/lib/demo");
+    const r = await clearDemo();
+    await audit(user.id, "demo.clear", "demo", null, r);
+    revalidatePath("/admin", "layout");
+    return { ok: true, message: `Practice data removed — ${r.orders} orders, ${r.customers} customers and ${r.riders} riders.` };
+  } catch (e) {
+    return fail(e);
+  }
+}

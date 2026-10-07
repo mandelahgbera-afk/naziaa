@@ -43,7 +43,7 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <Hero media={media} products={products} c={c} />
+      <Hero media={media} c={c} />
       <TrustMarquee c={c} />
       <Statement c={c} />
       <ProductShowcase products={products} c={c} />
