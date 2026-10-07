@@ -12,6 +12,11 @@ function resend() {
 }
 
 export async function sendEmail({ to, subject, html, tag, headers }: { to: string; subject: string; html: string; tag: string; headers?: Record<string, string> }) {
+  // practice data uses the reserved .invalid domain: never send to it
+  if (/.invalid$/i.test(to.trim())) {
+    console.info(`[email] demo address — skipped "${subject}" to ${to}`);
+    return { skipped: true };
+  }
   const client = resend();
   if (!client) {
     console.warn(`[email] RESEND_API_KEY missing — skipped "${subject}" to ${to}`);
