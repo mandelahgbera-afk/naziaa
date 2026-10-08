@@ -7,7 +7,9 @@ import type { HeroMedia } from "@/lib/data";
    Behaves like a surface, not a player: muted, looping, inline, no controls,
    fades in only once frames are actually playing (the poster holds until then).
    Phones get the vertical cut when admin has uploaded one.
-   Reduced motion or data-saver → the poster still, no stream at all. */
+   Only data-saver gets the poster still. "Reduce motion" (switched on by default on many
+   Windows PCs) still plays it: it's a slow, silent backdrop, and the scroll zoom is
+   already switched off for those visitors. */
 
 export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>; className?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -19,32 +21,84 @@ export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>;
 
   useEffect(() => {
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Deciding still-vs-stream needs browser-only signals, so it happens after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (reduce || conn?.saveData) setStillOnly(true);
+    if (conn?.saveData) setStillOnly(true);
     if (media.mobilePlaybackId && window.matchMedia("(max-width: 767px)").matches) setPlaybackId(media.mobilePlaybackId);
   }, [media.mobilePlaybackId]);
 
   useEffect(() => {
     const video = ref.current;
     if (!video || stillOnly) return;
-    const src = `https://stream.mux.com/${playbackId}.m3u8`;
-    let destroy: (() => void) | undefined;
+    // browsers only autoplay silent video: set it on the element itself, not just the attribute
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    const src = `https://stream.mux.com/${playbackId}.m3u8`;
+    let cancelled = false;
+    let destroy: (() => void) | undefined;
+    const tryPlay = () => {
+      if (!cancelled && video.paused) video.play().catch(() => {});
+    };
+
+    const native = () => {
       video.src = src;
+      video.load();
+      tryPlay();
+    };
+
+    // Apple's built-in player is the best on iPhone/iPad/Safari. Newer desktop Chrome and Edge
+    // also *claim* they can play this stream ("maybe") but often stall, so everyone else
+    // streams through hls.js.
+    const apple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|Edg|OPR|Firefox|Android/.test(navigator.userAgent)) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+    if (apple && video.canPlayType("application/vnd.apple.mpegurl")) {
+      native();
     } else {
-      import("hls.js").then(({ default: Hls }) => {
-        if (!Hls.isSupported()) return;
-        const hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1, maxBufferLength: 12 });
-        hls.loadSource(src);
-        hls.attachMedia(video);
-        destroy = () => hls.destroy();
-      });
+      import("hls.js")
+        .then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (!Hls.isSupported()) return native();
+          const hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1, maxBufferLength: 12 });
+          let recovered = false;
+          hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
+          hls.on(Hls.Events.ERROR, (_e, data) => {
+            if (!data.fatal) return;
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
+              recovered = true;
+              hls.recoverMediaError();
+            } else {
+              hls.destroy();
+              native();
+            }
+          });
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          destroy = () => hls.destroy();
+        })
+        .catch(native);
     }
-    video.play().catch(() => {});
-    return () => destroy?.();
+
+    // belt and braces: retry when there's enough to play, when the tab comes back,
+    // and on the first touch/scroll if a browser held autoplay back
+    const onVisible = () => document.visibilityState === "visible" && tryPlay();
+    video.addEventListener("canplay", tryPlay);
+    document.addEventListener("visibilitychange", onVisible);
+    const once = { once: true, passive: true } as const;
+    window.addEventListener("pointerdown", tryPlay, once);
+    window.addEventListener("scroll", tryPlay, once);
+    window.addEventListener("keydown", tryPlay, { once: true });
+
+    return () => {
+      cancelled = true;
+      destroy?.();
+      video.removeEventListener("canplay", tryPlay);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pointerdown", tryPlay);
+      window.removeEventListener("scroll", tryPlay);
+      window.removeEventListener("keydown", tryPlay);
+    };
   }, [playbackId, stillOnly]);
 
   return (
@@ -64,6 +118,7 @@ export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>;
           playsInline
           autoPlay
           preload="auto"
+          poster={poster}
           disablePictureInPicture
           disableRemotePlayback
           aria-hidden="true"
