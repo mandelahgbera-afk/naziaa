@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { useEffect, useState } from "react";
 import { AmberField } from "@/components/hero/amber-field";
 import { HeroVideo } from "@/components/hero/hero-video";
 import { RiseWords } from "@/components/motion";
@@ -15,10 +16,21 @@ export function Hero({ media, c }: { media: HeroMedia; c: Copy }) {
   const contentY = useTransform(scrollY, [0, 900], [0, 180]);
   const contentO = useTransform(scrollY, [0, 520], [1, 0]);
   const mediaScale = useTransform(scrollY, [0, 900], [1, 1.12]);
+  // computers: no scroll zoom or fade — the hero simply scrolls away like a page, nothing shifts or flickers
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDesktop(mq.matches);
+    const on = () => setDesktop(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const still = reduce || desktop;
 
   return (
     <section className="relative h-[100svh] min-h-[680px] overflow-hidden bg-darker" aria-label="Introduction">
-      <motion.div className="absolute inset-0" style={reduce ? undefined : { scale: mediaScale }}>
+      <motion.div className="absolute inset-0" style={still ? undefined : { scale: mediaScale }}>
         {media ? <HeroVideo media={media} className="h-full w-full" /> : <AmberField className="h-full w-full" />}
       </motion.div>
 
@@ -26,17 +38,17 @@ export function Hero({ media, c }: { media: HeroMedia; c: Copy }) {
       <div className="pointer-events-none absolute inset-0 bg-darker" style={{ opacity: media ? media.tint : 0.12 }} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-darker/55 to-transparent" />
       {media ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-b from-transparent via-[#e7c49a]/45 to-cream" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-b from-transparent via-[#e7c49a]/45 to-cream md:h-[10%] md:via-transparent" />
       ) : (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[8%] bg-gradient-to-b from-transparent to-cream" />
       )}
 
-      <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center">
-        <motion.div className="relative z-10 md:col-span-7 lg:col-span-6" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
+      <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center md:pt-20 md:pb-[10vh]">
+        <motion.div className="relative z-10 md:col-span-7 lg:col-span-6" style={still ? undefined : { y: contentY, opacity: contentO }}>
           <p className="eyebrow fade-up text-paper/75" style={{ ["--d" as string]: "0.2s" }}>
             {c["home.hero.eyebrow"]}
           </p>
-          <h1 className="display mt-6 text-paper">
+          <h1 className="display mt-6 text-paper md:text-[min(7.2vw,12.5svh)]">
             <RiseWords text={headline.plain} italic={headline.italic} immediate delay={0.35} stagger={0.09} />
           </h1>
           <p className="fade-up mt-5 max-w-md text-[1rem] text-paper/80 md:mt-7 md:text-[1.08rem]" style={{ ["--d" as string]: "0.9s" }}>
