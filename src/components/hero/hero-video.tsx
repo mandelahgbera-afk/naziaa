@@ -15,11 +15,25 @@ export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>;
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [stillOnly, setStillOnly] = useState(false);
-  const [portrait, setPortrait] = useState(false);
+  // the video's shape, read from a tiny Mux thumbnail before the stream starts so nothing jumps
+  const [shape, setShape] = useState<"unknown" | "portrait" | "landscape">("unknown");
   const [wide, setWide] = useState(false);
 
   const [playbackId, setPlaybackId] = useState(media.playbackId);
   const poster = media.posterUrl ?? `https://image.mux.com/${playbackId}/thumbnail.webp?time=0&width=1600`;
+  // a 48px frame stretched to fill the screen is a naturally soft wash: no live blur to redraw while scrolling
+  const wash = `https://image.mux.com/${playbackId}/thumbnail.webp?time=0&width=48`;
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setShape(img.naturalHeight > img.naturalWidth * 1.05 ? "portrait" : "landscape");
+    img.onerror = () => setShape("landscape");
+    img.src = wash;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [wash]);
 
   useEffect(() => {
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
@@ -109,22 +123,24 @@ export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>;
   }, [playbackId, stillOnly]);
 
   // a tall (phone-shot) video on a wide screen: show it whole in an arch instead of cropping it
-  const framed = portrait && wide;
+  const framed = shape === "portrait" && wide;
+  // on computers, wait until the shape is known so the first frame appears in its final place
+  const ready = playing && (!wide || shape !== "unknown");
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`}>
-      {/* the wash behind: the same picture, softly blurred when the video is framed */}
+      {/* behind everything: the sharp still on phones, a soft wash of the same frame on computers */}
       <div
         aria-hidden
-        className="absolute inset-0 transition-[filter,transform] duration-700"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url(${poster})`,
+          backgroundImage: `url(${wide ? wash : poster})`,
           backgroundSize: "cover",
           backgroundPosition: `${media.focalX * 100}% ${media.focalY * 100}%`,
-          filter: framed ? "blur(48px) saturate(1.1) brightness(.8)" : undefined,
-          transform: framed ? "scale(1.25)" : undefined,
+          transform: wide ? "scale(1.15)" : undefined,
         }}
       />
+      {wide && <div aria-hidden className="absolute inset-0 bg-darker/25" />}
       {!stillOnly && (
         <video
           ref={ref}
@@ -139,13 +155,12 @@ export function HeroVideo({ media, className }: { media: NonNullable<HeroMedia>;
           aria-hidden="true"
           tabIndex={-1}
           onPlaying={() => setPlaying(true)}
-          onLoadedMetadata={(e) => setPortrait(e.currentTarget.videoHeight > e.currentTarget.videoWidth * 1.05)}
           className={
             framed
               ? "absolute top-1/2 right-[max(4vw,calc((100vw-80rem)/2+2rem))] aspect-[9/16] h-[min(78vh,760px)] -translate-y-[46%] rounded-t-full rounded-b-[28px] object-cover shadow-[0_40px_80px_-20px_rgba(20,10,4,.6)] ring-1 ring-white/10 transition-opacity duration-[1600ms] ease-[var(--ease-silk)]"
               : "relative h-full w-full object-cover transition-opacity duration-[1600ms] ease-[var(--ease-silk)]"
           }
-          style={{ opacity: playing ? 1 : 0, objectPosition: `${media.focalX * 100}% ${media.focalY * 100}%` }}
+          style={{ opacity: ready ? 1 : 0, objectPosition: `${media.focalX * 100}% ${media.focalY * 100}%` }}
         />
       )}
     </div>
