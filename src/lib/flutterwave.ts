@@ -14,6 +14,8 @@ async function fw<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...(init?.headers ?? {}) },
     cache: "no-store",
+    // never leave a customer waiting on a stalled connection
+    signal: AbortSignal.timeout(20_000),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.status !== "success") {

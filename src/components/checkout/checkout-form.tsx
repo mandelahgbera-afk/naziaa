@@ -111,7 +111,9 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
     };
     setSubmitting(true);
     try {
-      const res = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(35_000) }).catch((e) => {
+        throw new Error(e?.name === "TimeoutError" ? "Payment is taking too long to open — please check your connection and try again." : "We couldn’t reach the payment page — please check your connection and try again.");
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Something went wrong");
       // the bag is cleared on the confirmation page, only once payment is verified
