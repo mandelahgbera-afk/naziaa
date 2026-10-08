@@ -32,7 +32,7 @@ export function Hero({ media, c }: { media: HeroMedia; c: Copy }) {
       )}
 
       <div className="wrap relative grid h-full grid-cols-1 content-center pt-24 md:grid-cols-12 md:content-normal md:items-center">
-        <motion.div className="relative z-10 md:col-span-8" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
+        <motion.div className="relative z-10 md:col-span-7 lg:col-span-6" style={reduce ? undefined : { y: contentY, opacity: contentO }}>
           <p className="eyebrow fade-up text-paper/75" style={{ ["--d" as string]: "0.2s" }}>
             {c["home.hero.eyebrow"]}
           </p>
