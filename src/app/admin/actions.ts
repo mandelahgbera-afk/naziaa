@@ -664,7 +664,8 @@ const TestTo = z.array(z.string().trim().toLowerCase().email("One of the test ad
 export async function sendNewsletter(d: NewsletterDraft, to: "everyone" | string[]): Promise<Result> {
   try {
     const { user } = to === "everyone" ? await requireOwner() : await requireStaff();
-    if (d.subject.trim().length < 3 || d.body.trim().length < 20) throw new Error("Add a subject and a few lines of copy.");
+    if (d.subject.trim().length < 3) throw new Error("Add a subject (at least 3 letters).");
+    if (d.body.trim().length < 5) throw new Error("Write your message first.");
     const { newsletterEmail, unsubscribeUrl, plainSubject } = await import("@/lib/newsletter");
     const { sendEmailBatch } = await import("@/lib/email");
     const input = await buildNewsletter(d);
@@ -676,16 +677,19 @@ export async function sendNewsletter(d: NewsletterDraft, to: "everyone" | string
 
     if (to !== "everyone") {
       const list = [...new Set(TestTo.parse(to))];
-      const sent = await sendEmailBatch(list.map((e) => mail(e, `[Test] ${plainSubject(input.subject)}`)), "newsletter_test");
-      if (!sent) throw new Error("The test didn’t send — check the email settings and try again.");
+      const { sent, error } = await sendEmailBatch(list.map((e) => mail(e, `[Test] ${plainSubject(input.subject)}`)), "newsletter_test");
+      if (!sent) throw new Error(`The test didn’t send${error ? ` — the email service said: “${error}”` : " — check the email settings and try again."}`);
       return { ok: true, message: list.length === 1 ? `Test sent to ${list[0]}` : `Test sent to ${list.length} people` };
     }
 
     const { data: subs, error } = await supabaseAdmin().from("newsletter_subscribers").select("email").eq("status", "subscribed");
     if (error) throw error;
-    const sent = await sendEmailBatch((subs ?? []).map((s) => mail(s.email, plainSubject(input.subject))), "newsletter");
-    await audit(user.id, "newsletter.send", "newsletter", null, { subject: plainSubject(input.subject), recipients: subs?.length ?? 0, sent });
-    return { ok: true, message: `Sent to ${sent} of ${subs?.length ?? 0} subscribers.` };
+    const real = (subs ?? []).filter((s) => !/.invalid$/i.test(s.email));
+    if (!real.length) throw new Error("There’s no one to send to yet — add subscribers first (practice emails are never sent to).");
+    const { sent, failed, error: why } = await sendEmailBatch(real.map((s) => mail(s.email, plainSubject(input.subject))), "newsletter");
+    await audit(user.id, "newsletter.send", "newsletter", null, { subject: plainSubject(input.subject), recipients: real.length, sent, failed, error: why || null });
+    if (!sent) throw new Error(`Nothing was sent${why ? ` — the email service said: “${why}”` : "."}`);
+    return { ok: true, message: failed ? `Sent to ${sent} of ${real.length}. ${failed} couldn’t be delivered${why ? ` (${why})` : ""}.` : `Sent to all ${sent} subscriber${sent === 1 ? "" : "s"}.` };
   } catch (e) {
     return fail(e);
   }

@@ -50,7 +50,9 @@ export function NewsletterComposer({
     return () => window.clearTimeout(timer.current);
   }, [d]);
 
-  const ready = d.subject.trim().length >= 3 && d.body.trim().length >= 20;
+  const ready = d.subject.trim().length >= 3 && d.body.trim().length >= 5;
+  // say exactly what's missing instead of a silently greyed-out button
+  const missing = d.subject.trim().length < 3 ? "Add a subject (at least 3 letters) to send." : d.body.trim().length < 5 ? "Write your message to send." : "";
   const addPerson = (raw: string) => {
     const parts = raw.split(/[\s,;]+/).map((x) => x.trim().toLowerCase()).filter(Boolean);
     const good = parts.filter((x) => EMAIL.test(x));
@@ -225,7 +227,8 @@ export function NewsletterComposer({
           >
             Send to all {subscribers} subscriber{subscribers === 1 ? "" : "s"}
           </button>
-          {!ready && <span className="text-xs text-muted">Add a subject and a few lines to send.</span>}
+          {missing && <span className="text-xs text-[#a0441a]">{missing}</span>}
+          {!missing && !testTo.length && <span className="text-xs text-muted">Add someone under “Send a test to” to test.</span>}
           {!canSend && <span className="text-xs text-muted">Only the owner can send to the full list.</span>}
         </div>
       </div>

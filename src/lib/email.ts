@@ -38,25 +38,35 @@ export async function sendEmail({ to, subject, html, tag, headers }: { to: strin
 }
 
 /** Many personalised emails, 100 per request (Resend's batch limit). Returns how many were accepted. */
+/** Many personalised emails, 100 per request (Resend's batch limit).
+    "Permissive" so one bad address in an imported list can't block everyone else. */
 export async function sendEmailBatch(emails: { to: string; subject: string; html: string; headers?: Record<string, string> }[], tag: string) {
-  const real = emails.filter((e) => !/\.invalid$/i.test(e.to.trim()));
+  const real = emails.filter((e) => !/.invalid$/i.test(e.to.trim()));
   const client = resend();
-  if (!client) {
-    console.warn(`[email] RESEND_API_KEY missing — skipped ${real.length} "${tag}" emails`);
-    return 0;
-  }
+  if (!client) return { sent: 0, failed: real.length, error: "Email sending isn’t set up (RESEND_API_KEY is missing in Vercel)." };
   const from = process.env.EMAIL_FROM ?? "Nazia Botanics <onboarding@resend.dev>";
   const replyTo = process.env.EMAIL_REPLY_TO;
   let sent = 0;
+  let failed = 0;
+  let error = "";
   for (let i = 0; i < real.length; i += 100) {
     const chunk = real.slice(i, i + 100).map((e) => ({ from, to: e.to, subject: e.subject, html: e.html, ...(replyTo ? { replyTo } : {}), ...(e.headers ? { headers: e.headers } : {}), tags: [{ name: "type", value: tag }] }));
-    const { data, error } = await client.batch.send(chunk);
-    if (error) console.error("[email] batch failed", error);
-    else sent += data?.data?.length ?? chunk.length;
+    const res = await client.batch.send(chunk, { batchValidation: "permissive" });
+    if (res.error) {
+      console.error("[email] batch failed", res.error);
+      failed += chunk.length;
+      error ||= res.error.message;
+    } else {
+      const d = res.data as { data?: unknown[]; errors?: { message?: string }[] } | null;
+      const bad = d?.errors?.length ?? 0;
+      sent += d?.data?.length ?? chunk.length - bad;
+      failed += bad;
+      if (bad) error ||= d?.errors?.[0]?.message ?? "Some addresses were rejected.";
+    }
     // stay under the provider's requests-per-second limit
     if (i + 100 < real.length) await new Promise((r) => setTimeout(r, 600));
   }
-  return sent;
+  return { sent, failed, error };
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
