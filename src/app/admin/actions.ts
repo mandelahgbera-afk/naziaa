@@ -732,3 +732,68 @@ export async function clearPracticeData(): Promise<Result> {
     return fail(e);
   }
 }
+
+// ─── Newsletter lists ────────────────────────────────────────────────────────
+const ImportInput = z.object({
+  name: z.string().trim().min(1, "Give the list a name, e.g. “Pop-up market”.").max(40),
+  emails: z.array(z.string()).min(1, "No emails found to import.").max(20000, "That’s over 20,000 emails — split it into smaller files."),
+});
+
+/** Imported people join as "import · <name>" so the whole list can be removed later.
+    Anyone already on the list (including people who unsubscribed) is left untouched. */
+export async function importSubscribers(input: z.input<typeof ImportInput>): Promise<Result> {
+  try {
+    const { user } = await requireStaff();
+    const d = ImportInput.parse(input);
+    const clean = [...new Set(d.emails.map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e) && e.length <= 254))];
+    if (!clean.length) throw new Error("No valid emails found to import.");
+    const source = `import · ${d.name}`;
+    const db = supabaseAdmin();
+    let added = 0;
+    for (let i = 0; i < clean.length; i += 500) {
+      const { data, error } = await db
+        .from("newsletter_subscribers")
+        .upsert(
+          clean.slice(i, i + 500).map((email) => ({ email, source, status: "subscribed", consent_at: new Date().toISOString() })),
+          { onConflict: "email", ignoreDuplicates: true },
+        )
+        .select("id");
+      if (error) throw error;
+      added += data?.length ?? 0;
+    }
+    await audit(user.id, "newsletter.import", "newsletter", null, { source, found: clean.length, added });
+    revalidatePath("/admin/newsletter");
+    const already = clean.length - added;
+    return { ok: true, message: `Added ${added} to “${d.name}”${already ? ` · ${already} were already on your list` : ""}.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Removes every subscriber who joined through one source — e.g. a test import. */
+export async function deleteSubscriberList(source: string): Promise<Result> {
+  try {
+    const { user } = await requireOwner();
+    if (!source) throw new Error("Choose a list to remove.");
+    const { data, error } = await supabaseAdmin().from("newsletter_subscribers").delete().eq("source", source).select("id");
+    if (error) throw error;
+    await audit(user.id, "newsletter.list_delete", "newsletter", null, { source, removed: data?.length ?? 0 });
+    revalidatePath("/admin/newsletter");
+    return { ok: true, message: `Removed ${data?.length ?? 0} email${data?.length === 1 ? "" : "s"}.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function removeSubscriber(email: string): Promise<Result> {
+  try {
+    const { user } = await requireStaff();
+    const { error } = await supabaseAdmin().from("newsletter_subscribers").delete().eq("email", email.trim().toLowerCase());
+    if (error) throw error;
+    await audit(user.id, "newsletter.remove", "newsletter", null, { email });
+    revalidatePath("/admin/newsletter");
+    return { ok: true, message: `${email} removed.` };
+  } catch (e) {
+    return fail(e);
+  }
+}
