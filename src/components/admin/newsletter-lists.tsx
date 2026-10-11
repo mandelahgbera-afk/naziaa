@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { deleteSubscriberList, importSubscribers, removeSubscriber } from "@/app/admin/actions";
 import { CloseIcon } from "@/components/icons";
+import { readAnyFile } from "@/lib/read-any-file";
 import { input, label } from "./ui";
 import { useAction, useToast } from "./use-action";
 
@@ -32,7 +33,7 @@ export function ImportList() {
   return (
     <div className="space-y-4">
       <div>
-        <label className={label}>List name</label>
+        <label className={label}>List name (optional)</label>
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="e.g. Pop-up market, Old customers, Test list" className={input} />
         <p className="mt-1 text-xs text-muted">So you can find it — and remove it in one tap — later.</p>
       </div>
@@ -42,7 +43,6 @@ export function ImportList() {
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,.txt,.tsv,.vcf,text/csv,text/plain,text/x-vcard,text/vcard"
             className="sr-only"
             tabIndex={-1}
             onChange={async (e) => {
@@ -61,7 +61,7 @@ export function ImportList() {
           />
           <button type="button" onClick={() => fileRef.current?.click()} className="pressable flex h-full min-h-28 w-full flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-line px-4 py-5 text-center hover:border-ink">
             <span className="text-sm">{fileName ? fileName : "Choose a file"}</span>
-            <span className="text-xs text-muted">CSV or text file, a spreadsheet saved as CSV, or contacts (.vcf)</span>
+            <span className="text-xs text-muted">Excel, Google Sheets (.xlsx), CSV, text or contacts (.vcf)</span>
           </button>
         </div>
         <div>
@@ -73,6 +73,11 @@ export function ImportList() {
               setFound(findEmails(e.target.value));
             }}
             rows={4}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            inputMode="email"
             placeholder={"…or paste emails here.\nAny format works — one per line, commas, or copied straight from a spreadsheet."}
             className={`${input} h-full min-h-28 resize-y`}
           />
@@ -93,8 +98,8 @@ export function ImportList() {
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          disabled={pending || !found.length || !name.trim()}
-          onClick={() => run(() => importSubscribers({ name, emails: found })).then((ok) => ok && reset())}
+          disabled={pending || !found.length}
+          onClick={() => run(() => importSubscribers({ name: name.trim() || `Imported ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`, emails: found })).then((ok) => ok && reset())}
           className="btn btn-dark disabled:opacity-50"
         >
           {pending ? "Adding…" : found.length ? `Add ${found.length} to the newsletter` : "Add to the newsletter"}
