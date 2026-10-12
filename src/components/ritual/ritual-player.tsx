@@ -39,62 +39,167 @@ function readWeek(): number {
   }
 }
 
+/* A silent, looping WAV: playing it through a normal <audio> element puts older iPhones into
+   "media" mode, so the ritual sound plays even with the silent switch on. */
+function silentWav() {
+  const rate = 8000;
+  const n = rate / 2;
+  const b = new ArrayBuffer(44 + n);
+  const v = new DataView(b);
+  const w = (o: number, s: string) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+  w(36, "data"); v.setUint32(40, n, true);
+  for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+  let s = "";
+  new Uint8Array(b).forEach((x) => (s += String.fromCharCode(x)));
+  return `data:audio/wav;base64,${btoa(s)}`;
+}
+
+/* One audio engine for the whole visit (phones only allow a few), built on the first tap.
+   The sound sits where phone speakers can actually play it: a soft major-sixth pad that
+   slowly breathes, over a warm hush like distant rain. */
 function useAmbient() {
   const ctx = useRef<AudioContext | null>(null);
-  const gain = useRef<GainNode | null>(null);
+  const master = useRef<GainNode | null>(null);
+  const unlock = useRef<HTMLAudioElement | null>(null);
   const [on, setOn] = useState(false);
+  const onRef = useRef(false);
 
-  const start = useCallback(() => {
-    const ac = new AudioContext();
-    const g = ac.createGain();
-    g.gain.value = 0;
-    g.connect(ac.destination);
-    // warm drone: two detuned low sines + filtered brown noise
-    [110, 164.8].forEach((f, i) => {
-      const o = ac.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-      o.detune.value = i ? 6 : -4;
-      const og = ac.createGain();
-      og.gain.value = i ? 0.05 : 0.08;
-      o.connect(og).connect(g);
-      o.start();
+  const build = () => {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ac = new AC({ latencyHint: "playback" });
+    const out = ac.createDynamicsCompressor();
+    out.threshold.value = -18;
+    out.ratio.value = 3;
+    out.connect(ac.destination);
+    const m = ac.createGain();
+    m.gain.value = 0;
+    m.connect(out);
+
+    // the pad: A3, C#4, E4, A4, F#4 — gently detuned pairs for a warm chorus
+    const pad = ac.createGain();
+    pad.gain.value = 0.9;
+    const tone = ac.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.frequency.value = 1800;
+    pad.connect(tone).connect(m);
+    [220, 277.18, 329.63, 440, 369.99].forEach((f, i) => {
+      [-5, 5].forEach((cents) => {
+        const o = ac.createOscillator();
+        o.type = i === 0 ? "triangle" : "sine";
+        o.frequency.value = f;
+        o.detune.value = cents;
+        const g = ac.createGain();
+        g.gain.value = [0.06, 0.035, 0.04, 0.022, 0.018][i];
+        o.connect(g).connect(pad);
+        o.start();
+      });
     });
-    const len = ac.sampleRate * 4;
+    // slow "breathing" swell, about one breath every 10 seconds
+    const lfo = ac.createOscillator();
+    lfo.frequency.value = 0.1;
+    const depth = ac.createGain();
+    depth.gain.value = 0.25;
+    lfo.connect(depth).connect(pad.gain);
+    lfo.start();
+
+    // the hush: pink-ish noise, softened
+    const len = ac.sampleRate * 6;
     const buf = ac.createBuffer(1, len, ac.sampleRate);
     const data = buf.getChannelData(0);
-    let last = 0;
+    let b0 = 0, b1 = 0, b2 = 0;
     for (let i = 0; i < len; i++) {
-      last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-      data[i] = last * 3.2;
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + white * 0.099;
+      b1 = 0.963 * b1 + white * 0.2965;
+      b2 = 0.57 * b2 + white * 1.0526;
+      data[i] = (b0 + b1 + b2 + white * 0.1848) * 0.11;
     }
     const noise = ac.createBufferSource();
     noise.buffer = buf;
     noise.loop = true;
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 180;
     const lp = ac.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 420;
+    lp.frequency.value = 1400;
     const ng = ac.createGain();
-    ng.gain.value = 0.35;
-    noise.connect(lp).connect(ng).connect(g);
+    ng.gain.value = 0.22;
+    noise.connect(hp).connect(lp).connect(ng).connect(m);
     noise.start();
-    g.gain.linearRampToValueAtTime(0.5, ac.currentTime + 3);
+
     ctx.current = ac;
-    gain.current = g;
+    master.current = m;
+    return ac;
+  };
+
+  const start = useCallback(async () => {
+    // newer iPhones: treat this as media, not a ringer sound
+    const nav = navigator as Navigator & { audioSession?: { type: string } };
+    try {
+      if (nav.audioSession) nav.audioSession.type = "playback";
+    } catch {}
+    // older iPhones: a silent media element does the same job
+    if (!unlock.current) {
+      unlock.current = new Audio(silentWav());
+      unlock.current.loop = true;
+      unlock.current.setAttribute("playsinline", "");
+    }
+    unlock.current.play().catch(() => {});
+
+    const ac = ctx.current ?? build();
+    try {
+      await ac.resume();
+    } catch {}
+    const g = master.current!.gain;
+    const now = ac.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0.85, now + 2.5);
+    onRef.current = true;
     setOn(true);
   }, []);
 
   const stop = useCallback(() => {
     const ac = ctx.current;
-    if (!ac || !gain.current) return;
-    gain.current.gain.linearRampToValueAtTime(0, ac.currentTime + 1.5);
-    window.setTimeout(() => ac.close(), 1600);
-    ctx.current = null;
+    onRef.current = false;
     setOn(false);
+    if (!ac || !master.current) return;
+    const g = master.current.gain;
+    const now = ac.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0, now + 1.2);
+    window.setTimeout(() => {
+      if (!onRef.current) {
+        ac.suspend().catch(() => {});
+        unlock.current?.pause();
+      }
+    }, 1300);
   }, []);
 
-  useEffect(() => () => { ctx.current?.close(); }, []);
-  return { on, toggle: () => (on ? stop() : start()), stop };
+  // phones pause audio when the screen locks or the app switches: pick back up on return
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState === "visible" && onRef.current) {
+        ctx.current?.resume().catch(() => {});
+        unlock.current?.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", back);
+    window.addEventListener("pageshow", back);
+    return () => {
+      document.removeEventListener("visibilitychange", back);
+      window.removeEventListener("pageshow", back);
+      ctx.current?.close().catch(() => {});
+      unlock.current?.pause();
+    };
+  }, []);
+
+  return { on, toggle: () => (on ? stop() : void start()), stop };
 }
 
 export function RitualPlayer() {
