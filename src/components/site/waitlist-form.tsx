@@ -142,7 +142,6 @@ export function WaitlistForm({
             <p className="mt-4 max-w-md text-paper/75">{successBody}</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <button type="button" onClick={share} className="btn bg-paper px-7 text-ink before:bg-honey">Tell a friend</button>
-              <a href="/shop" className="btn btn-light px-7">Visit the shop</a>
             </div>
           </motion.div>
         )}
