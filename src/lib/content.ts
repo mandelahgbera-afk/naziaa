@@ -155,6 +155,23 @@ export const CONTENT_GROUPS: ContentGroup[] = [
     ],
   },
   {
+    id: "waitlist",
+    label: "Waiting list",
+    href: "/waitlist",
+    fields: [
+      { key: "waitlist.eyebrow", label: "Small label", where: "Waiting list page, above the big title", default: "The waiting list", max: 30 },
+      { key: "waitlist.title", label: "Big title", where: "Waiting list page", default: "Be *first* to the next small batch.", max: 70 },
+      { key: "waitlist.body", label: "Sentence under the title", where: "Waiting list page", default: "Every Nazia oil is cold-infused by hand in small batches, and they go quickly. Join the list and we’ll tell you the moment the next one is ready — before anyone else.", long: true, max: 240 },
+      { key: "waitlist.choose", label: "Choice heading", where: "Waiting list page, above the choices", default: "What would you like to hear about?", max: 60 },
+      { key: "waitlist.choice.all", label: "Choice: everything", where: "Waiting list page choices", default: "Everything — the weekly ritual", max: 40 },
+      { key: "waitlist.choice.next", label: "Choice: new oil", where: "Waiting list page choices", default: "The next new oil", max: 40 },
+      { key: "waitlist.button", label: "Button", where: "Waiting list page", default: "Join the list", max: 24 },
+      { key: "waitlist.promises", label: "Three promises", where: "Waiting list page, the three small cards (Title — sentence, one per line)", default: "First access — Hear about each batch before it’s on the shop.\nBatch notes — What went into it, and how to use it best.\nNo noise — One calm email a week at most. Leave any time.", long: true, list: true, max: 400 },
+      { key: "waitlist.success", label: "After they join", where: "Waiting list page, after signing up", default: "You’re on the list.", max: 50 },
+      { key: "waitlist.success.body", label: "After they join — sentence", where: "Waiting list page, after signing up", default: "We’ll write the moment there’s news. In the meantime, tell a friend who’d love it.", long: true, max: 160 },
+    ],
+  },
+  {
     id: "newsletter",
     label: "Newsletter",
     href: "/",

@@ -10,8 +10,15 @@ import { useAction, useToast } from "./use-action";
 const FIND = /[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 const findEmails = (text: string) => [...new Set((text.match(FIND) ?? []).map((e) => e.toLowerCase()))];
 
-const LABELS: Record<string, string> = { site: "Website sign-ups", nudge: "Website invitation card", checkout: "Customers at checkout", footer: "Website footer" };
-const nice = (source: string) => LABELS[source] ?? (source.startsWith("import · ") ? source.slice(9) : source || "Other");
+const LABELS: Record<string, string> = { waitlist: "Waiting list · everything", site: "Website sign-ups", nudge: "Website invitation card", checkout: "Customers at checkout", footer: "Website footer" };
+const title = (slug: string) => slug.split("-").map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+const nice = (source: string) =>
+  LABELS[source] ??
+  (source.startsWith("import · ")
+    ? source.slice(9)
+    : source.startsWith("waitlist · ")
+      ? `Waiting list · ${source === "waitlist · next-oil" ? "Next new oil" : title(source.slice(11))}`
+      : source || "Other");
 
 /* ─── import: a file (CSV, text, contacts) or pasted emails ───────────────── */
 export function ImportList() {
