@@ -21,3 +21,6 @@ export function dashboardWindow(days = 14) {
 export function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
 }
+
+/** Milliseconds since epoch — for event handlers (kept out of components so render stays pure). */
+export const nowMs = () => Date.now();

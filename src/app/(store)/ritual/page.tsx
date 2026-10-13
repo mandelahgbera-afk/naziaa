@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { RitualPlayer } from "@/components/ritual/ritual-player";
+import { getProducts } from "@/lib/data";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/ritual" },
-  title: "The 5-minute ritual",
-  description: "A guided Siro Abhyanga — the Ayurvedic scalp massage — in four unhurried steps, with breathing and optional ambient sound.",
+  title: "The guided ritual",
+  description: "How to use Nazia’s oils, guided step by step with ambient sound: the Rosemary Lavender hot oil treatment, the Nettle Pumpkin Seed moisture seal, and a 5-minute scalp massage.",
 };
 
-export default function RitualPage() {
-  return <RitualPlayer />;
+export default async function RitualPage() {
+  const products = await getProducts();
+  return <RitualPlayer products={products.map((p) => ({ slug: p.slug, name: p.name, cutout: p.cutout, tint: p.tint }))} />;
 }
