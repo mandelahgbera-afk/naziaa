@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withShare } from "@/lib/seo";
 import { IngredientRail } from "@/components/home/ingredient-rail";
 import { ProductShowcase, RitualTeaser, TrustMarquee } from "@/components/home/sections";
 import { Em } from "@/components/em";
@@ -9,11 +10,11 @@ import { getCopy, getProducts } from "@/lib/data";
 // Admin edits and paid orders refresh these instantly; this is only the safety net
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withShare({
   alternates: { canonical: "/shop" },
   title: "Shop the oils",
   description: "Two small-batch, cold-infused botanical hair and scalp oils, handmade in Lagos.",
-};
+});
 
 export default async function ShopPage() {
   const [products, c] = await Promise.all([getProducts(), getCopy()]);

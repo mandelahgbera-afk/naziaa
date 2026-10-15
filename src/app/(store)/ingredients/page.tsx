@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withShare } from "@/lib/seo";
 import Link from "next/link";
 import { Botanical } from "@/components/botanicals";
 import { Em } from "@/components/em";
@@ -9,11 +10,11 @@ import { getCopy } from "@/lib/data";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withShare({
   alternates: { canonical: "/ingredients" },
   title: "Ingredient library",
   description: "Rosemary, ashwagandha, hibiscus and bhringraj — the four botanicals in every Nazia formula, and what each one does for your scalp.",
-};
+});
 
 const READ_MORE: Record<string, { href: string; label: string }> = {
   rosemary: { href: "/journal/rosemary-minoxidil", label: "Rosemary vs. Minoxidil" },

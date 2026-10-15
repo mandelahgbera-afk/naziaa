@@ -12,6 +12,7 @@ import { cartSubtotal, useCart, type CartLine } from "@/lib/cart";
 import { formatNaira, type Product } from "@/lib/catalog";
 import { speedLabel } from "@/lib/delivery";
 import type { Zone } from "@/lib/orders";
+import { track } from "@/lib/track";
 
 const PinMap = dynamic(() => import("@/components/maps/pin-map").then((m) => m.PinMap), { ssr: false });
 
@@ -110,6 +111,7 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
       checkoutSessionId: sessionId.current,
     };
     setSubmitting(true);
+    track.checkout(lines.map((l) => ({ slug: l.slug, name: l.name, priceKobo: l.priceKobo, qty: l.qty })));
     try {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(35_000) }).catch((e) => {
         throw new Error(e?.name === "TimeoutError" ? "Payment is taking too long to open — please check your connection and try again." : "We couldn’t reach the payment page — please check your connection and try again.");

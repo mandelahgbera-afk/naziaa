@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CheckIcon } from "@/components/icons";
 import { useCart } from "@/lib/cart";
 import { formatNaira, type Product } from "@/lib/catalog";
+import { track } from "@/lib/track";
 
 type Phase = "idle" | "pouring" | "added";
 
@@ -25,6 +26,7 @@ export function AddToBag({ product, qty = 1, className = "", compact = false }: 
     setPhase("pouring");
     window.setTimeout(() => {
       add({ slug: product.slug, name: product.name, subtitle: product.subtitle, priceKobo: product.priceKobo, image: product.cutout, accent: product.accent }, qty);
+      track.addToBag({ slug: product.slug, name: product.name, priceKobo: product.priceKobo, qty });
       setPhase("added");
       window.setTimeout(() => setPhase("idle"), 1800);
     }, 650);

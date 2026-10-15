@@ -1,4 +1,5 @@
 import { CopyProvider } from "@/components/copy";
+import { TikTokPixel } from "@/components/tiktok-pixel";
 import { getCopy } from "@/lib/data";
 
 /* The waiting list stands alone: no menu, bag, footer or tab bar — nothing to wander off to.
@@ -8,6 +9,7 @@ export default async function WaitlistLayout({ children }: { children: React.Rea
   return (
     <CopyProvider value={c}>
       <div className="grain">
+        <TikTokPixel />
         <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center pt-[calc(1.6rem+env(safe-area-inset-top))]">
           <p className="text-center text-paper" aria-label="Nazia Botanics">
             <span className="block font-serif text-[1.6rem] leading-none tracking-[0.34em] md:text-[1.9rem]">NAZIA</span>

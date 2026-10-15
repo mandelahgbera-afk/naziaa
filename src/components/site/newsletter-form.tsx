@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { DropMascot } from "@/components/drop-mascot";
 import { ArrowIcon } from "@/components/icons";
+import { track } from "@/lib/track";
 
 type State = "idle" | "sending" | "done" | "error";
 
@@ -25,6 +26,7 @@ export function NewsletterForm({ source = "footer" }: { source?: string }) {
       if (!res.ok) throw new Error(json.error ?? "Something went wrong");
       try { localStorage.setItem("nz-nl", "subscribed"); } catch {}
       setState("done");
+      track.subscribe("footer");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Something went wrong");
       setState("error");

@@ -5,6 +5,7 @@ import { MobileTabBar } from "@/components/site/mobile-tab-bar";
 import { NewsletterNudge } from "@/components/site/newsletter-nudge";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { CopyProvider } from "@/components/copy";
+import { TikTokPixel } from "@/components/tiktok-pixel";
 import { getCopy, getProducts, getSettings } from "@/lib/data";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         Skip to content
       </a>
       <SmoothScroll />
+      <TikTokPixel />
       <Header announcements={settings.announcements} />
       <main id="main">{children}</main>
       <Footer products={products} settings={settings} c={c} />

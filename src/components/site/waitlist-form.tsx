@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { DropMascot } from "@/components/drop-mascot";
 import { Em } from "@/components/em";
+import { track } from "@/lib/track";
 
 type Choice = { id: string; label: string; hint?: string; tint?: [string, string] };
 const silk = [0.22, 1, 0.36, 1] as const;
@@ -39,6 +40,7 @@ export function WaitlistForm({
       if (!res.ok) throw new Error(json.error ?? "Something went wrong — please try again.");
       setPosition(json.position ?? null);
       setState("done");
+      track.subscribe("waitlist");
       try {
         window.localStorage.setItem("nz-nl", "subscribed"); // the gentle invitation card won't ask again
       } catch {}

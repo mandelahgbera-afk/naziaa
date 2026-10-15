@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { withShare } from "@/lib/seo";
 import Link from "next/link";
 import { JournalCover } from "@/components/journal-cover";
 import { Reveal, RiseWords } from "@/components/motion";
 import { ARTICLES } from "@/lib/journal";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withShare({
   alternates: { canonical: "/journal" },
   title: "Journal",
   description: "Wisdom, history and the science of botanical hair care — from cortisol and shedding to the 5-minute Ayurvedic scalp massage.",
-};
+});
 
 export default function JournalPage() {
   const [lead, ...rest] = ARTICLES;

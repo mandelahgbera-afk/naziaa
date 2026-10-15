@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withShare } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { Em } from "@/components/em";
@@ -9,11 +10,11 @@ import { getCopy } from "@/lib/data";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withShare({
   alternates: { canonical: "/our-story" },
   title: "Our story",
   description: "Nazia began as one woman’s search for a real answer to brittle, stuck hair — and became a small-batch botanical brand made in Lagos.",
-};
+});
 
 export default async function OurStoryPage() {
   const c = await getCopy();

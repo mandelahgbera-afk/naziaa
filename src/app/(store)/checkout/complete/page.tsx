@@ -19,6 +19,7 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
   const status = typeof sp.status === "string" ? sp.status : null;
 
   let paid = false;
+  let totalKobo = 0;
   let tracking: string | null = null;
 
   if (txRef && status !== "cancelled") {
@@ -32,8 +33,11 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
       console.error("payment verification failed", e);
     }
     if (paid) {
-      const { data } = await supabaseAdmin().from("orders").select("ref, tracking_token").eq("ref", txRef).maybeSingle();
-      if (data) tracking = `/orders/${data.ref}?t=${data.tracking_token}`;
+      const { data } = await supabaseAdmin().from("orders").select("ref, tracking_token, total_kobo").eq("ref", txRef).maybeSingle();
+      if (data) {
+        tracking = `/orders/${data.ref}?t=${data.tracking_token}`;
+        totalKobo = data.total_kobo;
+      }
     }
   }
 
@@ -43,7 +47,7 @@ export default async function CompletePage({ searchParams }: PageProps<"/checkou
     <section className="wrap flex min-h-[85svh] flex-col items-center justify-center pt-32 pb-20 text-center">
       {paid ? (
         <>
-          <ClearBag />
+          <ClearBag orderRef={txRef ?? undefined} totalKobo={totalKobo} />
           <DropMascot mood="happy" size={150} />
           <p className="eyebrow mt-8">Order {txRef}</p>
           <h1 className="title mt-3">{c["checkout.thanks.title"]}</h1>

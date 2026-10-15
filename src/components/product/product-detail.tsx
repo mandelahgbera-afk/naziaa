@@ -9,6 +9,7 @@ import { QtyStepper } from "@/components/cart/cart-drawer";
 import { DropIcon, LeafIcon, PlusIcon, RiderIcon } from "@/components/icons";
 import { RiseWords } from "@/components/motion";
 import { formatNaira, type Product } from "@/lib/catalog";
+import { track } from "@/lib/track";
 
 const silk = [0.22, 1, 0.36, 1] as const;
 
@@ -17,6 +18,8 @@ export function ProductDetail({ product, delivery, inside }: { product: Product;
   const [view, setView] = useState<"cutout" | "square">("cutout");
   const buyRow = useRef<HTMLDivElement>(null);
   const [showBar, setShowBar] = useState(false);
+
+  useEffect(() => track.viewProduct({ slug: product.slug, name: product.name, priceKobo: product.priceKobo }), [product.slug, product.name, product.priceKobo]);
 
   // the sticky buy bar appears once the main “Add to bag” scrolls out of view
   useEffect(() => {

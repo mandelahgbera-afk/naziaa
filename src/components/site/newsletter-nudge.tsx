@@ -7,6 +7,7 @@ import { useCopy } from "@/components/copy";
 import { DropMascot } from "@/components/drop-mascot";
 import { CloseIcon } from "@/components/icons";
 import { useCart } from "@/lib/cart";
+import { track } from "@/lib/track";
 
 /* A gentle invitation to the weekly email — never a pop-up wall.
    It only appears for visitors who are clearly enjoying the site:
@@ -124,6 +125,7 @@ export function NewsletterNudge({ enabled, delaySeconds }: { enabled: boolean; d
       if (!res.ok) throw new Error(json.error ?? "Something went wrong");
       store("local")?.setItem("nz-nl", "subscribed");
       setState("done");
+      track.subscribe("invitation");
       window.setTimeout(() => setOpen(false), 4200);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Something went wrong");

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withShare } from "@/lib/seo";
 import { Em } from "@/components/em";
 import { AmberField } from "@/components/hero/amber-field";
 import { Reveal } from "@/components/motion";
@@ -9,11 +10,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const revalidate = 120;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withShare({
   alternates: { canonical: "/waitlist" },
   title: "The waiting list",
   description: "Be first to the next small batch of Nazia Botanics hair oils — join the waiting list for restock alerts, new oils and the weekly ritual.",
-};
+});
 
 async function waitingCount() {
   try {
