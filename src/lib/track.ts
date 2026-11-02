@@ -2,6 +2,8 @@
    No names, emails or phone numbers are ever sent — only what was viewed, added or paid. */
 
 type TTQ = { track: (event: string, props?: Record<string, unknown>) => void; page: () => void };
+import { record } from "./insights";
+
 const ttq = () => (typeof window === "undefined" ? undefined : (window as unknown as { ttq?: TTQ }).ttq);
 
 export type Item = { slug: string; name: string; priceKobo: number; qty?: number };
@@ -16,9 +18,9 @@ function send(event: string, props?: Record<string, unknown>) {
 }
 
 export const track = {
-  viewProduct: (i: Item) => send("ViewContent", { contents: contents([i]), value: i.priceKobo / 100, currency: "NGN" }),
-  addToBag: (i: Item) => send("AddToCart", { contents: contents([i]), value: value([i]), currency: "NGN" }),
-  checkout: (items: Item[]) => send("InitiateCheckout", { contents: contents(items), value: value(items), currency: "NGN" }),
+  viewProduct: (i: Item) => (record("product_view", { slug: i.slug }), send("ViewContent", { contents: contents([i]), value: i.priceKobo / 100, currency: "NGN" })),
+  addToBag: (i: Item) => (record("add_to_bag", { slug: i.slug }), send("AddToCart", { contents: contents([i]), value: value([i]), currency: "NGN" })),
+  checkout: (items: Item[]) => (record("checkout_start"), send("InitiateCheckout", { contents: contents(items), value: value(items), currency: "NGN" })),
   paid: (ref: string, totalKobo: number) => {
     // once per order, even if the confirmation page is refreshed
     try {
@@ -26,9 +28,10 @@ export const track = {
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");
     } catch {}
+    record("paid");
     send("CompletePayment", { value: totalKobo / 100, currency: "NGN", content_type: "product", order_id: ref });
   },
-  subscribe: (where: string) => send("Subscribe", { content_name: where }),
+  subscribe: (where: string) => (record("subscribe", { where }), send("Subscribe", { content_name: where })),
   page: () => {
     try {
       ttq()?.page();

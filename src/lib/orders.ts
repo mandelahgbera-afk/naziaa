@@ -65,14 +65,12 @@ export async function createOrder(input: CheckoutInput) {
   const threshold = (settings?.value as { freeDeliveryThresholdKobo?: number | null } | null)?.freeDeliveryThresholdKobo ?? null;
   const deliveryFee = threshold && subtotal >= threshold ? 0 : zone.fee_kobo;
 
-  const { data: customer, error: cErr } = await db
+  // anyone can type any email here, so an existing customer's details change only after a real payment
+  const { error: upErr } = await db
     .from("customers")
-    .upsert(
-      { email: input.email, phone: input.phone, full_name: input.fullName, ...(input.marketingOptIn ? { marketing_opt_in: true } : {}) },
-      { onConflict: "email" },
-    )
-    .select("id")
-    .single();
+    .upsert({ email: input.email, phone: input.phone, full_name: input.fullName }, { onConflict: "email", ignoreDuplicates: true });
+  if (upErr) throw upErr;
+  const { data: customer, error: cErr } = await db.from("customers").select("id").eq("email", input.email).single();
   if (cErr) throw cErr;
 
   const promisedBy = new Date(Date.now() + zone.eta_max_hours * 3600_000).toISOString();
@@ -100,6 +98,8 @@ export async function createOrder(input: CheckoutInput) {
 
   const { error: iErr } = await db.from("order_items").insert(items.map((i) => ({ ...i, order_id: order.id })));
   if (iErr) throw iErr;
+
+  if (input.marketingOptIn) await db.from("order_events").insert({ order_id: order.id, kind: "marketing_opt_in" });
 
   if (input.checkoutSessionId) {
     await db.from("checkout_sessions").update({ order_id: order.id }).eq("id", input.checkoutSessionId);
@@ -141,7 +141,8 @@ export async function markOrderPaid(tx: VerifiedTx) {
   if (full) {
     const mail = orderConfirmationEmail(full);
     await sendEmail({ to: full.email, subject: mail.subject, html: mail.html, tag: "order_confirmation" });
-    await joinNewsletterIfOptedIn(full.email);
+    await db.from("customers").update({ phone: full.phone, full_name: full.full_name }).eq("email", full.email);
+    await joinNewsletterIfOptedIn(order.id, full.email);
     await alertOwner(order.id);
   }
   return { ok: true as const, orderId: order.id, already: false };
@@ -149,11 +150,12 @@ export async function markOrderPaid(tx: VerifiedTx) {
 
 /** Buyers who left "keep me on the weekly ritual email" ticked join the list.
     Anyone who unsubscribed before stays unsubscribed. */
-async function joinNewsletterIfOptedIn(email: string) {
+async function joinNewsletterIfOptedIn(orderId: string, email: string) {
   try {
     const db = supabaseAdmin();
-    const { data: c } = await db.from("customers").select("marketing_opt_in").eq("email", email).maybeSingle();
-    if (!c?.marketing_opt_in) return;
+    const { count } = await db.from("order_events").select("id", { count: "exact", head: true }).eq("order_id", orderId).eq("kind", "marketing_opt_in");
+    if (!count) return;
+    await db.from("customers").update({ marketing_opt_in: true }).eq("email", email);
     await db
       .from("newsletter_subscribers")
       .upsert({ email: email.toLowerCase(), source: "checkout", status: "subscribed", consent_at: new Date().toISOString() }, { onConflict: "email", ignoreDuplicates: true });

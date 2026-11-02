@@ -7,6 +7,7 @@ import { useCopy } from "@/components/copy";
 import { DropMascot } from "@/components/drop-mascot";
 import { CloseIcon } from "@/components/icons";
 import { useCart } from "@/lib/cart";
+import { readConsent } from "@/lib/consent";
 import { track } from "@/lib/track";
 
 /* A gentle invitation to the weekly email — never a pop-up wall.
@@ -58,6 +59,7 @@ export function NewsletterNudge({ enabled, delaySeconds }: { enabled: boolean; d
     let seconds = Number(session?.getItem("nz-time") ?? 0);
     const show = () => {
       if (useCart.getState().open) return; // wait for the bag to close
+      if (readConsent() === null) return; // one question at a time
       session?.setItem("nz-nudge-shown", "1");
       setOpen(true);
     };

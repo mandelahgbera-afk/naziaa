@@ -263,6 +263,9 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
               <span className="block text-xs text-muted">One email a week at most. Unsubscribe any time.</span>
             </span>
           </label>
+          <p className="mt-4 text-xs leading-relaxed text-muted">
+            By paying you confirm you’re 18 or older and agree to our <Link href="/terms" className="underline">terms</Link> and <Link href="/returns" className="underline">returns policy</Link>. We save your bag once you enter your email and may send up to three reminders if you don’t finish; see our <Link href="/privacy" className="underline">privacy policy</Link>.
+          </p>
         </Step>
       </div>
 

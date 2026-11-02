@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DropMascot } from "@/components/drop-mascot";
 import { Wordmark } from "@/components/site/wordmark";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { isSafePath } from "@/lib/safe-path";
 
 export function LoginForm({ area, home }: { area: "admin" | "rider"; home: string }) {
   const router = useRouter();
@@ -39,7 +40,7 @@ export function LoginForm({ area, home }: { area: "admin" | "rider"; home: strin
       return;
     }
     const next = params.get("next");
-    router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : home);
+    router.replace(isSafePath(next) ? next : home);
     router.refresh();
   }
 

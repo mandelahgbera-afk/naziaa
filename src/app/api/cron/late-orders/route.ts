@@ -7,6 +7,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export async function GET(req: Request) {
   if (!cronAuthorized(req)) return new Response("unauthorised", { status: 401 });
   const db = supabaseAdmin();
+  // anonymous statistics are kept 90 days (the tables may not exist until the insights SQL has run)
+  const cutoff = new Date(Date.now() - 90 * 864e5).toISOString();
+  await db.from("site_events").delete().lt("created_at", cutoff);
+  await db.from("site_sessions").delete().lt("last_seen", cutoff);
   const { data: late, error } = await db
     .from("orders")
     .select("id, ref")

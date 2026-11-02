@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { limit } from "@/lib/rate-limit";
 import { DropMascot } from "@/components/drop-mascot";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -7,6 +9,9 @@ export const metadata: Metadata = { title: "Track an order" };
 
 async function findOrder(formData: FormData) {
   "use server";
+  const h = await headers();
+  const { ok } = await limit("track", h.get("x-forwarded-for")?.split(",")[0]?.trim() || "anon", 10);
+  if (!ok) redirect("/track?e=1");
   const ref = String(formData.get("ref") ?? "").trim().toUpperCase().replace(/^(?!NZ-)/, "NZ-");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!/^NZ-[A-Z0-9]{6}$/.test(ref) || !email.includes("@")) redirect("/track?e=1");

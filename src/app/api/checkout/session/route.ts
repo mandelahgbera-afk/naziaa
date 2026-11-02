@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getProducts } from "@/lib/data";
 import { clientIp, limit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -8,9 +9,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 const Body = z.object({
   id: z.string().uuid().nullable().optional(),
   email: z.string().trim().toLowerCase().email().max(254),
-  fullName: z.string().trim().max(120).optional(),
+  // goes into reminder emails, so letters only: no links or messages can be planted
+  fullName: z.string().trim().max(60).regex(/^[\p{L}\p{M} '’-]*$/u).optional().catch(undefined),
   phone: z.string().trim().max(24).optional(),
-  lines: z.array(z.object({ slug: z.string(), name: z.string().max(120), qty: z.number().int().min(1).max(10), priceKobo: z.number().int().min(0) })).max(20),
+  lines: z.array(z.object({ slug: z.string().regex(/^[a-z0-9-]+$/).max(80), qty: z.number().int().min(1).max(10) })).max(20),
 });
 
 export async function POST(req: Request) {
@@ -18,7 +20,13 @@ export async function POST(req: Request) {
   if (!ok) return Response.json({ error: "slow down" }, { status: 429 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
-  const { id, email, fullName, phone, lines } = parsed.data;
+  const { id, email, fullName, phone } = parsed.data;
+  // names and prices come from the catalogue, never from the browser
+  const products = await getProducts();
+  const lines = parsed.data.lines.flatMap((l) => {
+    const p = products.find((x) => x.slug === l.slug);
+    return p ? [{ slug: p.slug, name: p.name, qty: l.qty, priceKobo: p.priceKobo }] : [];
+  });
   const row = {
     email,
     full_name: fullName || null,
@@ -29,8 +37,11 @@ export async function POST(req: Request) {
   };
   try {
     const db = supabaseAdmin();
-    const q = id
-      ? db.from("checkout_sessions").update(row).eq("id", id).eq("status", "open").select("id").maybeSingle()
+    // one open bag per email, so reminders can't be multiplied against someone's inbox
+    const { data: same } = id ? { data: null } : await db.from("checkout_sessions").select("id").eq("email", email).eq("status", "open").limit(1).maybeSingle();
+    const target = id ?? same?.id;
+    const q = target
+      ? db.from("checkout_sessions").update(row).eq("id", target).eq("status", "open").select("id").maybeSingle()
       : db.from("checkout_sessions").insert(row).select("id").single();
     const { data, error } = await q;
     if (error) throw error;

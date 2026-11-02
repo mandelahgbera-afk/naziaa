@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { clientIp, limit } from "@/lib/rate-limit";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { subscribe } from "@/lib/subscribe";
 
 const Body = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -16,13 +16,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: "Please enter a valid email and tick the consent box." }, { status: 400 });
 
   try {
-    const { error } = await supabaseAdmin()
-      .from("newsletter_subscribers")
-      .upsert(
-        { email: parsed.data.email, source: parsed.data.source ?? "site", status: "subscribed", consent_at: new Date().toISOString() },
-        { onConflict: "email" },
-      );
-    if (error) throw error;
+    await subscribe(parsed.data.email, parsed.data.source ?? "site");
     return Response.json({ ok: true });
   } catch (e) {
     console.error("newsletter signup failed", e);

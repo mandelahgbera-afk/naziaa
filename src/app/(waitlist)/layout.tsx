@@ -1,4 +1,7 @@
 import { CopyProvider } from "@/components/copy";
+import Link from "next/link";
+import { ConsentBanner, CookieChoicesLink } from "@/components/consent-banner";
+import { SiteInsights } from "@/components/site-insights";
 import { TikTokPixel } from "@/components/tiktok-pixel";
 import { getCopy } from "@/lib/data";
 
@@ -10,6 +13,8 @@ export default async function WaitlistLayout({ children }: { children: React.Rea
     <CopyProvider value={c}>
       <div className="grain">
         <TikTokPixel />
+        <SiteInsights />
+        <ConsentBanner />
         <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center pt-[calc(1.6rem+env(safe-area-inset-top))]">
           <p className="text-center text-paper" aria-label="Nazia Botanics">
             <span className="block font-serif text-[1.6rem] leading-none tracking-[0.34em] md:text-[1.9rem]">NAZIA</span>
@@ -19,6 +24,11 @@ export default async function WaitlistLayout({ children }: { children: React.Rea
         <main id="main">{children}</main>
         <footer className="wrap pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-center text-xs text-muted">
           Small batch · cold-infused · handmade in Lagos
+          <span className="mt-2 flex justify-center gap-4">
+            <Link href="/privacy" className="underline">Privacy</Link>
+            <Link href="/terms" className="underline">Terms</Link>
+            <CookieChoicesLink className="underline" />
+          </span>
         </footer>
       </div>
     </CopyProvider>

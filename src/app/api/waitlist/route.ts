@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { clientIp, limit } from "@/lib/rate-limit";
+import { subscribe } from "@/lib/subscribe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /* Waiting-list sign-ups join the newsletter list tagged with what they asked for:
@@ -22,10 +23,7 @@ export async function POST(req: Request) {
 
   try {
     const db = supabaseAdmin();
-    const { error } = await db
-      .from("newsletter_subscribers")
-      .upsert({ email, source, status: "subscribed", consent_at: new Date().toISOString(), unsubscribed_at: null }, { onConflict: "email" });
-    if (error) throw error;
+    await subscribe(email, source);
     const { count } = await db.from("newsletter_subscribers").select("id", { count: "exact", head: true }).like("source", "waitlist%").eq("status", "subscribed");
     return Response.json({ ok: true, position: count ?? null });
   } catch (e) {

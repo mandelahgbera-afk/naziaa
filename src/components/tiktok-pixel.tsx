@@ -2,16 +2,25 @@
 
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CONSENT_EVENT, privacySignal, readConsent } from "@/lib/consent";
 import { track } from "@/lib/track";
 
-/* TikTok pixel. Loads after the page is interactive so it never slows the first paint,
+/* TikTok pixel, only after the visitor allows it. Loads after the page is interactive so it never slows the first paint,
    and counts page views on in-site navigation too (the site moves between pages without reloading). */
 const PIXEL = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DB82TOJC77UCMNE27B0G";
 
 export function TikTokPixel() {
   const pathname = usePathname();
   const first = useRef(true);
+  // nothing from TikTok loads until the visitor taps Allow; a later "Essentials only" stops it on the next page
+  const [allowed, setAllowed] = useState(false);
+  useEffect(() => {
+    const read = () => setAllowed(readConsent() === "granted" && !privacySignal());
+    read();
+    window.addEventListener(CONSENT_EVENT, read);
+    return () => window.removeEventListener(CONSENT_EVENT, read);
+  }, []);
   useEffect(() => {
     if (first.current) {
       first.current = false; // the snippet itself records the first page
@@ -20,6 +29,7 @@ export function TikTokPixel() {
     track.page();
   }, [pathname]);
 
+  if (!allowed) return null;
   return (
     <Script id="tiktok-pixel" strategy="afterInteractive">
       {`!function (w, d, t) {

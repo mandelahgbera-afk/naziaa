@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookieChoicesLink } from "@/components/consent-banner";
 import type { Product } from "@/lib/catalog";
 import type { StorefrontSettings } from "@/lib/data";
 import type { Copy } from "@/lib/content";
@@ -34,6 +35,10 @@ export function Footer({ products, settings, c }: { products: Product[]; setting
           </FooterCol>
           <FooterCol title="Care">
             <FooterLink href="/track">Track an order</FooterLink>
+            <FooterLink href="/returns">Delivery &amp; returns</FooterLink>
+            <FooterLink href="/privacy">Privacy</FooterLink>
+            <FooterLink href="/terms">Terms</FooterLink>
+            <li><CookieChoicesLink /></li>
             <FooterLink href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</FooterLink>
             {settings.whatsappNumber && (
               <FooterLink href={`https://wa.me/${settings.whatsappNumber}`}>WhatsApp us</FooterLink>

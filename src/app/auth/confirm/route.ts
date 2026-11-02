@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isSafePath } from "@/lib/safe-path";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /* Lands password-reset (and other auth) links: swaps the one-time code for a
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
   const nextParam = url.searchParams.get("next") ?? "/account/password";
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/account/password";
+  const next = isSafePath(nextParam) ? nextParam : "/account/password";
 
   const supabase = await supabaseServer();
   let ok = false;

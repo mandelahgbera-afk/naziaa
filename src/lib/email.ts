@@ -71,7 +71,9 @@ export async function sendEmailBatch(emails: { to: string; subject: string; html
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function layout({ preheader, title, body, cta }: { preheader: string; title: string; body: string; cta?: { href: string; label: string } }) {
+export const legalLine = () => [process.env.EMAIL_LEGAL_NAME || "Nazia Botanics", process.env.EMAIL_POSTAL_ADDRESS || "Lagos, Nigeria"].join(" · ");
+
+function layout({ preheader, title, body, cta, foot }: { preheader: string; title: string; body: string; cta?: { href: string; label: string }; foot?: string }) {
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width"><meta charset="utf-8"><title>${esc(title)}</title></head>
 <body style="margin:0;background:#faf3ec;font-family:Georgia,'Times New Roman',serif;color:#2b211c">
 <span style="display:none;max-height:0;overflow:hidden">${esc(preheader)}</span>
@@ -83,7 +85,7 @@ function layout({ preheader, title, body, cta }: { preheader: string; title: str
 <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#5e4c42">${body}</div>
 ${cta ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px"><tr><td style="background:#3a2a22;border-radius:999px"><a href="${cta.href}" style="display:inline-block;padding:14px 28px;font-family:Arial,sans-serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#fffaf5;text-decoration:none">${esc(cta.label)}</a></td></tr></table>` : ""}
 </td></tr>
-<tr><td align="center" style="padding:24px 8px;font-family:Arial,sans-serif;font-size:12px;color:#7a665a;line-height:1.6">Small batch · cold-infused · handmade in Lagos<br>Questions? Just reply to this email.</td></tr>
+<tr><td align="center" style="padding:24px 8px;font-family:Arial,sans-serif;font-size:12px;color:#7a665a;line-height:1.6">Small batch · cold-infused · handmade in Lagos<br>Questions? Just reply to this email.<br>${esc(legalLine())}${foot ? `<br>${foot}` : ""}</td></tr>
 </table></td></tr></table></body></html>`;
 }
 
@@ -218,7 +220,7 @@ export function lateApologyEmail(o: OrderForEmail, voucher: string | null) {
   };
 }
 
-export function cartReminderEmail({ name, lines, step, sessionId }: { name: string | null; lines: { name: string; qty: number }[]; step: number; sessionId: string }) {
+export function cartReminderEmail({ name, lines, step, sessionId, unsubscribe }: { name: string | null; lines: { name: string; qty: number }[]; step: number; sessionId: string; unsubscribe: string }) {
   const first = name ? esc(name.split(" ")[0]) : "there";
   const list = lines.map((l) => `${esc(l.name)} × ${l.qty}`).join("<br>");
   const titles = ["You left something warm behind.", "Your bag is still resting.", "Last call for your ritual."];
@@ -229,6 +231,7 @@ export function cartReminderEmail({ name, lines, step, sessionId }: { name: stri
       title: titles[step] ?? titles[0],
       body: `<p>Hi ${first}, your bag is just as you left it:</p><p style="font-family:Georgia,serif;font-size:17px;color:#2b211c">${list}</p><p>Small batches go quickly — finish your order whenever you’re ready.</p>`,
       cta: { href: `${site()}/checkout?bag=${sessionId}`, label: "Return to your bag" },
+      foot: `<a href="${esc(unsubscribe)}" style="color:#7a665a">Stop these reminders</a>`,
     }),
   };
 }

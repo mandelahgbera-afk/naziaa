@@ -494,8 +494,8 @@ const SettingsInput = z
       .refine((v) => !v || !v.trim() || isWhatsApp(toWhatsApp(v)), "That doesn’t look like a phone number — try 0803 123 4567.")
       .transform((v) => (v && v.trim() ? toWhatsApp(v) : null)),
     contactEmail: z.string().trim().toLowerCase().email("Enter a valid contact email"),
-    instagram: z.string().trim().url("Instagram must be a full link, e.g. https://www.instagram.com/nazia.botanics/").or(z.literal("")),
-    tiktok: z.string().trim().url("TikTok must be a full link, e.g. https://www.tiktok.com/@nazia_botanics").or(z.literal("")),
+    instagram: z.string().trim().regex(/^https:\/\/\S+$/, "Instagram must be a full link, e.g. https://www.instagram.com/nazia.botanics/").or(z.literal("")),
+    tiktok: z.string().trim().regex(/^https:\/\/\S+$/, "TikTok must be a full link, e.g. https://www.tiktok.com/@nazia_botanics").or(z.literal("")),
     nudgeEnabled: z.boolean(),
     nudgeDelaySeconds: z.number().int().min(5).max(300),
     orderAlerts: z.boolean(),

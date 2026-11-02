@@ -5,11 +5,25 @@ import crypto from "node:crypto";
    Gmail, Apple Mail, Outlook and phone mail apps. */
 
 const site = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const secret = () => process.env.CRON_SECRET ?? "dev-secret";
+const secret = () => {
+  const v = process.env.CRON_SECRET;
+  if (!v && process.env.NODE_ENV === "production") throw new Error("CRON_SECRET is not set");
+  return v ?? "dev-secret";
+};
 
 export function signEmail(email: string) {
   return crypto.createHmac("sha256", secret()).update(email.toLowerCase()).digest("base64url").slice(0, 32);
 }
+
+/** Constant-time check of a signed link. */
+export function signatureOk(signed: string, sig: string) {
+  const a = Buffer.from(signEmail(signed));
+  const b = Buffer.from(sig);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export const rejoinUrl = (email: string, source: string) =>
+  `${site()}/api/newsletter/rejoin?e=${encodeURIComponent(email)}&src=${encodeURIComponent(source)}&s=${signEmail(`rejoin:${email}:${source}`)}`;
 
 export function unsubscribeUrl(email: string) {
   return `${site()}/api/newsletter/unsubscribe?e=${encodeURIComponent(email)}&s=${signEmail(email)}`;
@@ -138,6 +152,7 @@ export function newsletterEmail(input: NewsletterInput, unsubscribe: string) {
 <tr><td align="center" style="padding:26px 16px 0;font-family:${sans};font-size:12px;line-height:1.8;color:#7a665a">
   ${socialLinks}<br>
   Small batch · cold-infused · handmade in Lagos<br>
+  ${esc([process.env.EMAIL_LEGAL_NAME || "Nazia Botanics", process.env.EMAIL_POSTAL_ADDRESS || "Lagos, Nigeria"].join(" · "))}<br>
   You’re receiving this because you joined the weekly ritual. <a href="${unsubscribe}" style="color:#7a665a">Unsubscribe</a>
 </td></tr>
 

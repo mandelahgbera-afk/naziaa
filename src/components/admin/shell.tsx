@@ -18,6 +18,7 @@ const NAV = [
   { href: "/orders", label: "Orders" },
   { href: "/riders", label: "Riders" },
   { href: "/complaints", label: "Complaints" },
+  { href: "/insights", label: "Insights" },
   { href: "/customers", label: "Customers" },
   { href: "/products", label: "Products & batches" },
   { href: "/words", label: "Site words" },

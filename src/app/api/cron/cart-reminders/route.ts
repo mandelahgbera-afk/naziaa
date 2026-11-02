@@ -1,5 +1,6 @@
 import { cronAuthorized } from "@/lib/cron";
 import { cartReminderEmail, sendEmail } from "@/lib/email";
+import { unsubscribeUrl } from "@/lib/newsletter";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /* Abandoned-bag sequence: three gentle reminders. The schedule is the gap in
@@ -43,10 +44,17 @@ export async function GET(req: Request) {
       continue;
     }
 
+    const { data: sub } = await db.from("newsletter_subscribers").select("status").eq("email", s.email!).maybeSingle();
+    if (sub?.status === "unsubscribed") {
+      await db.from("checkout_sessions").update({ status: "expired" }).eq("id", s.id);
+      continue;
+    }
+
     const lines = (s.lines as { name: string; qty: number }[]) ?? [];
     if (!lines.length) continue;
-    const mail = cartReminderEmail({ name: s.full_name, lines, step: s.reminders_sent, sessionId: s.id });
-    const r = await sendEmail({ to: s.email!, subject: mail.subject, html: mail.html, tag: `cart_reminder_${s.reminders_sent + 1}` });
+    const unsub = unsubscribeUrl(s.email!);
+    const mail = cartReminderEmail({ name: s.full_name, lines, step: s.reminders_sent, sessionId: s.id, unsubscribe: unsub });
+    const r = await sendEmail({ to: s.email!, subject: mail.subject, html: mail.html, tag: `cart_reminder_${s.reminders_sent + 1}`, headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } });
     if (!r.skipped) {
       // the touch trigger moves updated_at to now, which anchors the next gap
       await db.from("checkout_sessions").update({ reminders_sent: s.reminders_sent + 1, last_reminder_at: new Date().toISOString() }).eq("id", s.id);
