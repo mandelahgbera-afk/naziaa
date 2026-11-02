@@ -40,6 +40,10 @@ export async function limit(name: string, key: string, perMinute: number) {
   }
 }
 
-export function clientIp(req: Request) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anon";
+/** The visitor’s address. The site sits behind Cloudflare, so the address Vercel sees is a Cloudflare
+    server that changes request to request; Cloudflare passes the real one in cf-connecting-ip. */
+export function ipFrom(h: Headers) {
+  return h.get("cf-connecting-ip") || h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",")[0]?.trim() || "anon";
 }
+
+export const clientIp = (req: Request) => ipFrom(req.headers);
