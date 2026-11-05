@@ -12,6 +12,13 @@ export function GET() {
       orientation: "portrait",
       background_color: "#faf3ec",
       theme_color: "#faf3ec",
+      lang: "en-NG",
+      categories: ["shopping", "beauty", "lifestyle"],
+      shortcuts: [
+        { name: "Shop the oils", short_name: "Shop", url: "/shop" },
+        { name: "Track an order", short_name: "Track", url: "/track" },
+        { name: "The 5-minute ritual", short_name: "Ritual", url: "/ritual" },
+      ],
       icons: [
         { src: "/pwa-icon/192?tone=light", sizes: "192x192", type: "image/png", purpose: "any" },
         { src: "/pwa-icon/512?tone=light", sizes: "512x512", type: "image/png", purpose: "any" },

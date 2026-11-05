@@ -4,6 +4,7 @@ import type { Product } from "@/lib/catalog";
 import type { StorefrontSettings } from "@/lib/data";
 import type { Copy } from "@/lib/content";
 import { Em } from "@/components/em";
+import { InstallLink } from "./install-helper";
 import { NewsletterForm } from "./newsletter-form";
 
 export function Footer({ products, settings, c }: { products: Product[]; settings: StorefrontSettings; c: Copy }) {
@@ -39,6 +40,7 @@ export function Footer({ products, settings, c }: { products: Product[]; setting
             <FooterLink href="/privacy">Privacy</FooterLink>
             <FooterLink href="/terms">Terms</FooterLink>
             <li><CookieChoicesLink /></li>
+            <li><InstallLink className="link-underline text-left" /></li>
             <FooterLink href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</FooterLink>
             {settings.whatsappNumber && (
               <FooterLink href={`https://wa.me/${settings.whatsappNumber}`}>WhatsApp us</FooterLink>

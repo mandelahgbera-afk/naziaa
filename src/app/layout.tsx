@@ -71,6 +71,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en-NG" className={`${cormorant.variable} ${jost.variable}`}>
+      <head>
+        {/* the browser's install offer often fires before React loads: keep it for the home-screen helper */}
+        <script dangerouslySetInnerHTML={{ __html: "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bip=e;});" }} />
+      </head>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

@@ -2,6 +2,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { MobileTabBar } from "@/components/site/mobile-tab-bar";
+import { InstallHelper } from "@/components/site/install-helper";
 import { NewsletterNudge } from "@/components/site/newsletter-nudge";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { CopyProvider } from "@/components/copy";
@@ -27,6 +28,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <Footer products={products} settings={settings} c={c} />
       <MobileTabBar whatsapp={settings.whatsappNumber} instagram={settings.instagram} tiktok={settings.tiktok} email={settings.contactEmail} />
       <NewsletterNudge enabled={settings.nudgeEnabled} delaySeconds={settings.nudgeDelaySeconds} />
+      <InstallHelper />
       <CartDrawer products={products} freeDeliveryThresholdKobo={settings.freeDeliveryThresholdKobo} />
     </div>
     </CopyProvider>
