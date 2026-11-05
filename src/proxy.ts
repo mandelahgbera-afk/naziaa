@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { ADMIN_SLUG as SLUG } from "@/lib/admin-path";
 
 /* 1. The Studio answers only at its private address (ADMIN_SLUG). Requests there
       are rewritten to the internal /admin pages; /admin itself returns the
@@ -8,11 +9,13 @@ import { NextResponse, type NextRequest } from "next/server";
       signed-out visitors to the right login. Every page and action checks the
       role again on the server — this is only the first gate. */
 
-const SLUG = (process.env.ADMIN_SLUG || "admin").replace(/^\/+|\/+$/g, "") || "admin";
 const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
 
 export async function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+  // the Studio address is matched whatever the capitals (Studio-604 = studio-604)
+  const raw = request.nextUrl.pathname;
+  const head = raw.split("/")[1] ?? "";
+  const path = head.toLowerCase() === SLUG ? `/${SLUG}${raw.slice(head.length + 1)}` : raw;
   const isStudio = under(path, `/${SLUG}`);
   const isRider = under(path, "/rider");
 
