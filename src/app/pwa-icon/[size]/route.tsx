@@ -5,7 +5,23 @@ import { ImageResponse } from "next/og";
 export async function GET(req: Request, ctx: RouteContext<"/pwa-icon/[size]">) {
   const { size } = await ctx.params;
   const px = Math.min(1024, Math.max(16, Number(size) || 512));
-  const tone = new URL(req.url).searchParams.get("tone") === "light" ? "light" : "dark";
+  const toneParam = new URL(req.url).searchParams.get("tone");
+  // Android's notification badge: the drop's shape in white on transparent (only the shape is used)
+  if (toneParam === "badge") {
+    const s = Math.round(px * 0.72);
+    return new ImageResponse(
+      (
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width={s} height={s} viewBox="0 0 120 142">
+            <path d="M61 10 C66 3 75 3 79 6 C74 12 66 13 61 10 Z" fill="#fff" />
+            <path d="M60 20 C60 20 98 62 98 92 A38 38 0 0 1 22 92 C22 62 60 20 60 20 Z" fill="#fff" />
+          </svg>
+        </div>
+      ),
+      { width: px, height: px },
+    );
+  }
+  const tone = toneParam === "light" ? "light" : "dark";
   const bg = tone === "light" ? "#faf3ec" : "#1f1511";
   const drop = Math.round(px * 0.5);
   return new ImageResponse(

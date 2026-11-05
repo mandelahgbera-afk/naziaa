@@ -2,17 +2,20 @@ import Link from "next/link";
 import { ChangePasswordForm } from "@/components/admin/change-password";
 import { DeliveryManager, type Zone } from "@/components/admin/delivery-manager";
 import { PracticeData } from "@/components/admin/practice-data";
+import { PushCard } from "@/components/admin/push-card";
 import { AnnouncementsForm, ContactForm, FreeDeliveryForm, NudgeForm, OrderAlertsForm } from "@/components/admin/settings-forms";
 import { Card, PageHead } from "@/components/admin/ui";
 import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
 import { getProducts, getSettings } from "@/lib/data";
 import { demoCounts } from "@/lib/demo";
+import { PUSH_KINDS } from "@/lib/push";
 
 const TABS = [
   { id: "delivery", label: "Delivery" },
   { id: "storefront", label: "Storefront" },
   { id: "contact", label: "Contact & alerts" },
+  { id: "phone", label: "Phone alerts" },
   { id: "account", label: "Your sign-in" },
   { id: "practice", label: "Practice data" },
 ] as const;
@@ -93,8 +96,18 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
           <Card>
             <p className="eyebrow mb-4">New-order alerts</p>
             <OrderAlertsForm enabled={defaults.orderAlerts} email={defaults.orderAlertEmail} fallback={profile.role === "owner" ? (user.email ?? "") : ""} />
+            <p className="mt-4 text-xs text-muted">
+              Rather feel it on your phone? <Link href={adminHref("/settings?tab=phone")} className="underline underline-offset-4">Turn on phone alerts</Link>.
+            </p>
           </Card>
           </div>
+        )}
+
+        {tab === "phone" && (
+          <Card>
+            <p className="eyebrow mb-1">Notifications on this phone</p>
+            <PushCard publicKey={process.env.VAPID_PUBLIC_KEY || null} kinds={PUSH_KINDS} />
+          </Card>
         )}
 
         {tab === "account" && (

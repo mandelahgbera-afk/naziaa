@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRider } from "@/lib/auth";
-import { notifyStatus } from "@/lib/orders";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { afterResponse, notifyStatus } from "@/lib/orders";
+import { pushToStaff, pushWords } from "@/lib/push";
 
 type Result = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -32,5 +34,12 @@ export async function completeDelivery(orderId: string, code: string, photoPath:
 
 export async function failDelivery(orderId: string, reason: string) {
   if (reason.trim().length < 3) return { ok: false as const, error: "Add a short reason so the team can follow up." };
-  return move(orderId, "failed", { note: reason.trim() });
+  const r = await move(orderId, "failed", { note: reason.trim() });
+  if (r.ok) {
+    afterResponse(async () => {
+      const { data: o } = await supabaseAdmin().from("orders").select("ref").eq("id", orderId).single();
+      if (o) await pushToStaff("delivery", pushWords.failed({ id: orderId, ref: o.ref }));
+    });
+  }
+  return r;
 }

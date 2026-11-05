@@ -22,9 +22,10 @@ export async function proxy(request: NextRequest) {
   }
   if (!isStudio && !isRider) return NextResponse.next();
 
-  // the Studio install manifest is fetched without cookies; serve it without a login
-  if (isStudio && path === `/${SLUG}/app-manifest`) {
-    return SLUG === "admin" ? NextResponse.next() : NextResponse.rewrite(new URL("/admin/app-manifest", request.url));
+  // the Studio install manifest and its notifications worker are fetched without a login (they hold no data)
+  if (isStudio && (path === `/${SLUG}/app-manifest` || path === `/${SLUG}/push-sw`)) {
+    const file = path.slice(SLUG.length + 2);
+    return SLUG === "admin" ? NextResponse.next() : NextResponse.rewrite(new URL(`/admin/${file}`, request.url));
   }
 
   const cookieWrites: { name: string; value: string; options: Parameters<NextResponse["cookies"]["set"]>[2] }[] = [];

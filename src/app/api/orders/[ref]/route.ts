@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { afterResponse } from "@/lib/orders";
+import { pushToStaff, pushWords } from "@/lib/push";
 import { clientIp, limit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getTrackedOrder } from "@/lib/tracking";
@@ -55,5 +57,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/orders/[ref]">)
   });
   if (error) return Response.json({ error: "We couldn’t send that — please email us." }, { status: 500 });
   await db.from("order_events").insert({ order_id: order.id, kind: "complaint", message: `Customer raised: ${parsed.data.category}` });
+  const category = parsed.data.category;
+  afterResponse(() => pushToStaff("complaint", pushWords.complaint({ orderId: order.id, ref, category })));
   return Response.json({ ok: true });
 }

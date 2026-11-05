@@ -1,6 +1,8 @@
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { lateApologyEmail, newOrderAlertEmail, orderConfirmationEmail, sendEmail, statusEmail } from "./email";
 import type { VerifiedTx } from "./flutterwave";
+import { pushPaidOrder, pushToStaff, pushWords } from "./push";
 import { supabaseAdmin } from "./supabase/admin";
 
 /* Server-side order service. Prices always come from the database — whatever
@@ -117,6 +119,8 @@ export async function markOrderPaid(tx: VerifiedTx) {
   const expected = order.total_kobo / 100;
   if (tx.status !== "successful" || tx.currency !== order.currency || Number(tx.amount) < expected) {
     await db.from("order_events").insert({ order_id: order.id, kind: "payment", message: `Payment check failed: ${tx.status} ${tx.currency} ${tx.amount}` });
+    // a successful charge for the wrong amount is worth a look; a declined card isn't
+    if (tx.status === "successful") afterResponse(() => pushToStaff("order", pushWords.paymentIssue({ id: order.id, ref: tx.tx_ref })));
     return { ok: false as const, reason: "payment mismatch" };
   }
 
@@ -145,7 +149,19 @@ export async function markOrderPaid(tx: VerifiedTx) {
     await joinNewsletterIfOptedIn(order.id, full.email);
     await alertOwner(order.id);
   }
+  afterResponse(() => pushPaidOrder(order.id));
   return { ok: true as const, orderId: order.id, already: false };
+}
+
+/** Phone notifications go out once the response has been sent, so nobody waits on them. */
+export function afterResponse(task: () => Promise<unknown>) {
+  const run = () => task().catch((e) => console.error("after-response task failed", e));
+  try {
+    after(run);
+  } catch {
+    // outside a request (scripts): just run it
+    void run();
+  }
 }
 
 /** Buyers who left "keep me on the weekly ritual email" ticked join the list.

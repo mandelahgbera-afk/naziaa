@@ -11,6 +11,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { haptic } from "@/lib/use-media";
 import { AdminBaseProvider } from "./base";
 import { MobileTopBar, PullToRefresh } from "./mobile-chrome";
+import { StudioAlerts } from "./studio-alerts";
 import { Toaster } from "./use-action";
 
 const NAV = [
@@ -53,6 +54,7 @@ export function AdminShell({ name, role, base, badges, children }: { name: strin
   return (
     <AdminBaseProvider value={base}>
     <Toaster>
+      <StudioAlerts />
       <div className="min-h-dvh bg-cream">
         {/* desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 hidden w-64 bg-darker px-4 py-8 lg:block">

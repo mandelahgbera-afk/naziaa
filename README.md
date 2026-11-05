@@ -30,6 +30,9 @@ Next.js 16 · React 19 · Tailwind 4 · Supabase · Flutterwave · Resend · Mux
 2. **Create the database.** In Supabase → SQL Editor, run in order:
    - `supabase/migrations/20261006000000_init.sql`
    - `supabase/migrations/20261006000100_stock.sql`
+   - `supabase/migrations/20261007000000_performance.sql`
+   - `supabase/migrations/20261101000000_insights.sql`
+   - `supabase/migrations/20261105000000_push.sql`
    - `supabase/seed.sql`
 
 3. **Create the owner account.** Supabase → Authentication → Users → Add user (email + password, auto-confirm). Then in the SQL Editor:
@@ -50,6 +53,8 @@ Next.js 16 · React 19 · Tailwind 4 · Supabase · Flutterwave · Resend · Mux
 7. **Email (Resend).** The sending domain is `notify.naziabotanics.com`. `EMAIL_FROM` must use it (e.g. `orders@notify.naziabotanics.com`), `RESEND_API_KEY` must come from the Resend account where that domain is verified, and `EMAIL_REPLY_TO` should be an inbox someone reads.
 
 8. **Deploy to Vercel.** Import the repo, add every variable from `.env.local`, and set `NEXT_PUBLIC_SITE_URL` to the live domain. `vercel.json` runs the late-order job daily at 08:00 UTC and cart reminders at 18:00 UTC, the most often the Hobby plan allows. For hourly runs, upgrade to Pro and change the schedules to `0 * * * *`.
+
+9. **Phone notifications for the Studio.** In your own terminal run `npx web-push generate-vapid-keys`. Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (e.g. `mailto:hello@naziabotanics.com`) in Vercel, then redeploy. Run `supabase/migrations/20261105000000_push.sql` in the SQL Editor. On the phone: open the Studio (iPhone: Safari → Share → Add to Home Screen, then open it from that icon), go to Settings → Phone alerts and tap **Turn on for this phone**. New paid orders, care cases, failed deliveries and low stock can each be switched on or off per phone.
 
 ## How an order moves
 
