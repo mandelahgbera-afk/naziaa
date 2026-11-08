@@ -22,6 +22,8 @@ const WINDOWS = [
   { id: "evening", label: "Evening", hint: "4pm – 7pm" },
 ] as const;
 
+const NO_REMINDERS_KEY = "nazia:no-bag-reminders";
+
 const field = "w-full rounded-2xl border border-line bg-paper px-4 py-3.5 text-[0.98rem] outline-none transition placeholder:text-muted/70 focus:border-amber focus:ring-4 focus:ring-honey/20";
 
 export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { zones: Zone[]; products: Product[]; freeDeliveryThresholdKobo: number | null }) {
@@ -35,9 +37,36 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
   const [error, setError] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const sessionId = useRef<string | null>(null);
+  // "Don't email me about this bag": remembered on this device only
+  const [noReminders, setNoReminders] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem(NO_REMINDERS_KEY) === "1") setNoReminders(true);
+    } catch {}
+  }, []);
+
+  const chooseNoReminders = (on: boolean, form: HTMLFormElement | null) => {
+    setNoReminders(on);
+    try {
+      if (on) localStorage.setItem(NO_REMINDERS_KEY, "1");
+      else localStorage.removeItem(NO_REMINDERS_KEY);
+    } catch {}
+    if (on) {
+      // take the details off any bag already saved, so no reminder can go out
+      const email = form ? String(new FormData(form).get("email") ?? "").trim() : "";
+      void fetch("/api/checkout/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ forget: true, id: sessionId.current, email: /^\S+@\S+\.\S+$/.test(email) ? email : undefined }),
+      }).catch(() => {});
+    } else if (form) {
+      void saveSession(form, false);
+    }
+  };
 
   // Restore a bag from a reminder email (?bag=<checkout session id>)
   useEffect(() => {
@@ -65,8 +94,10 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
 
   const eta = zone ? speedLabel(zone.eta_min_hours, zone.eta_max_hours).toLowerCase() : "";
 
-  // Save the bag against the email as soon as we have one (abandoned-cart recovery)
-  const saveSession = async (form: HTMLFormElement) => {
+  // Save the bag against the email as soon as we have one (abandoned-cart recovery),
+  // unless they chose not to be reminded
+  const saveSession = async (form: HTMLFormElement, skip = noReminders) => {
+    if (skip) return;
     const fd = new FormData(form);
     const email = String(fd.get("email") ?? "");
     if (!/^\S+@\S+\.\S+$/.test(email) || !lines.length) return;
@@ -179,6 +210,13 @@ export function CheckoutForm({ zones, products, freeDeliveryThresholdKobo }: { z
         <Step n={1} title="Your details">
           <div className="grid gap-3 sm:grid-cols-2">
             <input name="email" type="email" required autoComplete="email" placeholder="Email address" className={`${field} sm:col-span-2`} onBlur={(e) => saveSession(e.currentTarget.form!)} />
+            <label className="-mt-1 flex cursor-pointer items-start gap-3 px-1 text-sm text-ink-soft sm:col-span-2">
+              <input type="checkbox" checked={noReminders} onChange={(e) => chooseNoReminders(e.target.checked, e.currentTarget.form)} className="mt-1 size-4 accent-amber" />
+              <span>
+                Don’t email me about this bag
+                <span className="block text-xs text-muted">If you don’t finish, we won’t keep your details with the bag or write to you about it.</span>
+              </span>
+            </label>
             <input name="fullName" required autoComplete="name" placeholder="Full name" className={field} onBlur={(e) => saveSession(e.currentTarget.form!)} />
             <input name="phone" type="tel" required autoComplete="tel" placeholder="Phone (for your rider)" className={field} onBlur={(e) => saveSession(e.currentTarget.form!)} />
           </div>

@@ -56,9 +56,12 @@ export function ImportList() {
               const file = e.target.files?.[0];
               e.target.value = "";
               if (!file) return;
-              if (/\.(xlsx?|numbers|docx?)$/i.test(file.name)) return toast({ text: "Save the spreadsheet as CSV first (File → Save as / Download → CSV), then choose that file.", tone: "bad" });
+              // .xlsx and .ods are read in the browser; older or closed formats aren't
+              if (/\.(xls|numbers|docx?)$/i.test(file.name)) return toast({ text: "Save it as Excel (.xlsx) or CSV first (File → Save as / Export), then choose that file.", tone: "bad" });
               if (file.size > 8 * 1024 * 1024) return toast({ text: "That file is over 8MB — split it into smaller files.", tone: "bad" });
-              const emails = findEmails(await file.text());
+              const text = await readAnyFile(file).catch(() => null);
+              if (text === null) return toast({ text: "This browser couldn’t open that file. Save it as CSV and try again.", tone: "bad" });
+              const emails = findEmails(text);
               if (!emails.length) return toast({ text: "No email addresses found in that file.", tone: "bad" });
               setFileName(file.name);
               setFound(emails);
@@ -68,7 +71,7 @@ export function ImportList() {
           />
           <button type="button" onClick={() => fileRef.current?.click()} className="pressable flex h-full min-h-28 w-full flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-line px-4 py-5 text-center hover:border-ink">
             <span className="text-sm">{fileName ? fileName : "Choose a file"}</span>
-            <span className="text-xs text-muted">Excel, Google Sheets (.xlsx), CSV, text or contacts (.vcf)</span>
+            <span className="text-xs text-muted">Excel or Google Sheets (.xlsx), .ods, CSV, text or contacts (.vcf)</span>
           </button>
         </div>
         <div>

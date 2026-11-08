@@ -38,4 +38,8 @@ export const NEXT_STATUSES: Record<string, string[]> = {
   refunded: [],
 };
 
+/** The moves the Studio offers. Never "paid": only a payment Flutterwave confirms
+    makes an order paid (the database refuses it from anyone else). */
+export const staffMoves = (status: string) => (NEXT_STATUSES[status] ?? []).filter((s) => s !== "paid");
+
 export const BOARD_COLUMNS = ["paid", "packed", "assigned", "out_for_delivery"] as const;

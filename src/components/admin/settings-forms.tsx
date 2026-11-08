@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { saveStorefrontSettings } from "@/app/admin/actions";
+import { saveOrderAlerts, saveStorefrontSettings } from "@/app/admin/actions";
 import { CloseIcon, PlusIcon } from "@/components/icons";
 import { formatNaira } from "@/lib/catalog";
 import { isWhatsApp, toWhatsApp } from "@/lib/social";
@@ -191,7 +191,7 @@ export function OrderAlertsForm({ enabled, email, fallback }: { enabled: boolean
           </motion.div>
         )}
       </AnimatePresence>
-      <button type="button" disabled={pending} onClick={() => run(() => saveStorefrontSettings({ orderAlerts: on, orderAlertEmail: to.trim() }))} className="btn btn-dark mt-5 disabled:opacity-50">
+      <button type="button" disabled={pending} onClick={() => run(() => saveOrderAlerts({ enabled: on, email: to.trim() }))} className="btn btn-dark mt-5 disabled:opacity-50">
         Save
       </button>
     </div>

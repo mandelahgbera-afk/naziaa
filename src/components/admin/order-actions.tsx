@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { addOrderNote, advanceOrder, assignRider } from "@/app/admin/actions";
+import { addOrderNote, advanceOrder, assignRider, checkPayment } from "@/app/admin/actions";
 import { STATUS_LABEL } from "@/lib/order-status";
 import { Card, input } from "./ui";
 import { useAction } from "./use-action";
@@ -16,14 +16,28 @@ export function OrderActions({ orderId, status, next, riders, riderId }: { order
   return (
     <Card>
       <p className="eyebrow mb-4">Move this order</p>
+      {status === "pending_payment" && (
+        <p className="mb-3 text-sm text-ink-soft">Not paid yet. An order turns paid only when Flutterwave confirms the payment. If the customer says they paid, ask Flutterwave.</p>
+      )}
       <div className="flex flex-wrap gap-2">
+        {status === "pending_payment" && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => checkPayment(orderId))}
+            className="rounded-full bg-dark px-4 py-2 text-xs tracking-[0.14em] text-paper uppercase transition hover:bg-amber disabled:opacity-40"
+          >
+            Check payment
+          </button>
+        )}
         {next.map((s) => (
           <button
             key={s}
             type="button"
             disabled={pending || (s === "failed" && !reason)}
             onClick={() => {
-              if (DANGER.has(s) && !window.confirm(`Move to “${STATUS_LABEL[s]}”?`)) return;
+              const restock = (s === "cancelled" || s === "refunded") && (status === "paid" || status === "packed") ? "\nIts bottles go back in stock." : "";
+              if (DANGER.has(s) && !window.confirm(`Move to “${STATUS_LABEL[s]}”?${restock}`)) return;
               run(() => advanceOrder(orderId, s, s === "failed" ? reason : undefined), `Moved to ${STATUS_LABEL[s]}`);
             }}
             className={`rounded-full px-4 py-2 text-xs tracking-[0.14em] uppercase transition disabled:opacity-40 ${DANGER.has(s) ? "border border-[#e3a07f] text-[#7a2e12] hover:bg-[#fbeee9]" : "bg-dark text-paper hover:bg-amber"}`}

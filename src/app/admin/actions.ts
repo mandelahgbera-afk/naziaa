@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwner, requireStaff } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { verifyByReference } from "@/lib/flutterwave";
 import { createDirectUpload } from "@/lib/mux";
-import { notifyStatus } from "@/lib/orders";
+import { ORDER_ALERTS_KEY } from "@/lib/order-alerts";
+import { markOrderPaid, notifyStatus } from "@/lib/orders";
 import { isWhatsApp, toWhatsApp } from "@/lib/social";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -52,13 +54,18 @@ function refreshStore() {
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
+// Staff never write to orders directly: every move goes through the database's
+// one state function, and "paid" comes only from a payment Flutterwave confirmed.
 export async function advanceOrder(orderId: string, to: string, note?: string): Promise<Result> {
   try {
     const { supabase, user } = await requireStaff();
+    if (to === "paid") return { ok: false, error: "An order is marked paid only when Flutterwave confirms the payment. Use “Check payment”." };
     const { error } = await supabase.rpc("advance_order", { p_order: orderId, p_to: to, p_note: note || null });
     if (error) throw error;
     await notifyStatus(orderId, to);
     await audit(user.id, "order.status", "order", orderId, { to, note });
+    // a cancelled or refunded order may have put bottles back in stock
+    if (to === "cancelled" || to === "refunded") refreshStore();
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${orderId}`);
     return { ok: true };
@@ -67,15 +74,32 @@ export async function advanceOrder(orderId: string, to: string, note?: string): 
   }
 }
 
+/** "The customer says they paid": asks Flutterwave. Only a payment it confirms marks the order paid. */
+export async function checkPayment(orderId: string): Promise<Result> {
+  try {
+    const { supabase, user } = await requireStaff();
+    const { data: order, error } = await supabase.from("orders").select("ref, status").eq("id", orderId).single();
+    if (error) throw error;
+    if (order.status !== "pending_payment") return { ok: true, message: "This order is already past payment." };
+    const tx = await verifyByReference(order.ref).catch(() => null);
+    if (!tx || tx.tx_ref !== order.ref) return { ok: false, error: "Flutterwave has no payment for this order yet." };
+    if (tx.status !== "successful") return { ok: false, error: `Flutterwave says this payment is “${tx.status}”, so the order stays unpaid.` };
+    const r = await markOrderPaid(tx);
+    await audit(user.id, "order.check_payment", "order", orderId, { result: r.ok ? (r.already ? "already" : "paid") : r.reason });
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${orderId}`);
+    if (!r.ok) return { ok: false, error: "Flutterwave’s payment doesn’t match this order’s total. It stays unpaid; check the amount with the customer." };
+    return { ok: true, message: "Flutterwave confirmed the payment. The order is paid." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function assignRider(orderId: string, riderId: string): Promise<Result> {
   try {
     const { supabase, user } = await requireStaff();
-    const { data: order, error } = await supabase.from("orders").update({ rider_id: riderId }).eq("id", orderId).select("status").single();
+    const { error } = await supabase.rpc("assign_rider", { p_order: orderId, p_rider: riderId });
     if (error) throw error;
-    if (order.status === "packed" || order.status === "failed") {
-      const { error: e2 } = await supabase.rpc("advance_order", { p_order: orderId, p_to: "assigned" });
-      if (e2) throw e2;
-    }
     await audit(user.id, "order.assign", "order", orderId, { riderId });
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${orderId}`);
@@ -472,9 +496,12 @@ export async function resolveComplaint(id: string, resolution: "refund" | "repla
 
 export async function setComplaintStatus(id: string, status: "open" | "in_progress"): Promise<Result> {
   try {
-    const { supabase } = await requireStaff();
+    const { supabase, user } = await requireStaff();
+    if (status !== "open" && status !== "in_progress") throw new Error("Choose open or in progress.");
+    const { data: before } = await supabase.from("complaints").select("status").eq("id", id).maybeSingle();
     const { error } = await supabase.from("complaints").update({ status }).eq("id", id);
     if (error) throw error;
+    await audit(user.id, "complaint.status", "complaint", id, { from: before?.status ?? null, to: status });
     revalidatePath("/admin/complaints");
     return { ok: true };
   } catch (e) {
@@ -498,10 +525,28 @@ const SettingsInput = z
     tiktok: z.string().trim().regex(/^https:\/\/\S+$/, "TikTok must be a full link, e.g. https://www.tiktok.com/@nazia_botanics").or(z.literal("")),
     nudgeEnabled: z.boolean(),
     nudgeDelaySeconds: z.number().int().min(5).max(300),
-    orderAlerts: z.boolean(),
-    orderAlertEmail: z.string().trim().toLowerCase().email("Enter a full email for order alerts, like name@gmail.com").or(z.literal("")),
   })
   .partial();
+
+const OrderAlertsInput = z.object({
+  enabled: z.boolean(),
+  email: z.string().trim().toLowerCase().email("Enter a full email for order alerts, like name@gmail.com").or(z.literal("")),
+});
+
+/** Kept in a private row (not the public storefront one), so the alert address never reaches visitors. */
+export async function saveOrderAlerts(input: z.input<typeof OrderAlertsInput>): Promise<Result> {
+  try {
+    const { supabase, user } = await requireStaff();
+    const d = OrderAlertsInput.parse(input);
+    const { error } = await supabase.from("site_settings").upsert({ key: ORDER_ALERTS_KEY, value: d, is_public: false });
+    if (error) throw error;
+    await audit(user.id, "settings.order_alerts", "site_settings", ORDER_ALERTS_KEY, d);
+    revalidatePath("/admin/settings");
+    return { ok: true, message: d.enabled ? "Saved. Each new order will be emailed." : "Saved. New-order emails are off." };
+  } catch (e) {
+    return fail(e);
+  }
+}
 
 export async function saveStorefrontSettings(input: z.input<typeof SettingsInput>): Promise<Result> {
   try {

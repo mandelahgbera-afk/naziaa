@@ -9,6 +9,7 @@ import { adminHref } from "@/lib/admin-path";
 import { requireStaff } from "@/lib/auth";
 import { getProducts, getSettings } from "@/lib/data";
 import { demoCounts } from "@/lib/demo";
+import { readOrderAlerts } from "@/lib/order-alerts";
 import { PUSH_KINDS } from "@/lib/push";
 
 const TABS = [
@@ -25,12 +26,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
   const tabParam = (await searchParams).tab;
   const tab = TABS.find((t) => t.id === tabParam)?.id ?? "delivery";
 
-  const [{ data: store }, { data: zones }, defaults, products, demo] = await Promise.all([
+  const [{ data: store }, { data: zones }, defaults, products, demo, alerts] = await Promise.all([
     supabase.from("site_settings").select("value").eq("key", "storefront").maybeSingle(),
     supabase.from("delivery_zones").select("id, name, description, fee_kobo, eta_min_hours, eta_max_hours, uses_courier, is_active").order("sort"),
     getSettings(),
     getProducts(),
     demoCounts().catch(() => null),
+    readOrderAlerts(supabase),
   ]);
   const demoTotal = demo ? Object.values(demo).reduce((a, b) => a + b, 0) : 0;
   const v = (store?.value ?? {}) as { announcements?: string[]; freeDeliveryThresholdKobo?: number | null; whatsappNumber?: string | null; contactEmail?: string; instagram?: string; tiktok?: string };
@@ -95,7 +97,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/admin/s
           </Card>
           <Card>
             <p className="eyebrow mb-4">New-order alerts</p>
-            <OrderAlertsForm enabled={defaults.orderAlerts} email={defaults.orderAlertEmail} fallback={profile.role === "owner" ? (user.email ?? "") : ""} />
+            <OrderAlertsForm enabled={alerts.enabled} email={alerts.email} fallback={profile.role === "owner" ? (user.email ?? "") : ""} />
             <p className="mt-4 text-xs text-muted">
               Rather feel it on your phone? <Link href={adminHref("/settings?tab=phone")} className="underline underline-offset-4">Turn on phone alerts</Link>.
             </p>

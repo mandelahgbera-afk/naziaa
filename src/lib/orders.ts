@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { lateApologyEmail, newOrderAlertEmail, orderConfirmationEmail, sendEmail, statusEmail } from "./email";
 import type { VerifiedTx } from "./flutterwave";
+import { readOrderAlerts } from "./order-alerts";
 import { pushPaidOrder, pushToStaff, pushWords } from "./push";
 import { supabaseAdmin } from "./supabase/admin";
 
@@ -124,16 +125,18 @@ export async function markOrderPaid(tx: VerifiedTx) {
     return { ok: false as const, reason: "payment mismatch" };
   }
 
-  // Only the first caller flips the status; a racing webhook/redirect gets zero rows
-  const { data: updated } = await db
-    .from("orders")
-    .update({ status: "paid", provider_tx_id: String(tx.id), payment_ref: tx.tx_ref })
-    .eq("id", order.id)
-    .eq("status", "pending_payment")
-    .select("id");
-  if (!updated?.length) return { ok: true as const, orderId: order.id, already: true };
+  // The database is the only way to "paid": it flips the order once (a racing
+  // webhook/redirect gets "already"), checks amount and currency again and takes the stock.
+  const { data: outcome, error: payErr } = await db.rpc("confirm_payment", {
+    p_ref: tx.tx_ref,
+    p_tx_id: String(tx.id),
+    p_amount_kobo: Math.round(Number(tx.amount) * 100),
+    p_currency: tx.currency,
+  });
+  if (payErr) throw payErr;
+  if (outcome === "already") return { ok: true as const, orderId: order.id, already: true };
+  if (outcome !== "paid") return { ok: false as const, reason: outcome === "unknown" ? "unknown order" : "payment mismatch" };
 
-  await db.rpc("allocate_stock", { p_order: order.id });
   // stock and batch shown on product pages may have changed. Allowed from the
   // webhook (route handler); a page render may not revalidate, so ignore it there.
   try {
@@ -184,13 +187,12 @@ async function joinNewsletterIfOptedIn(orderId: string, email: string) {
 async function alertOwner(orderId: string) {
   try {
     const db = supabaseAdmin();
-    const [{ data: o }, { data: settings }] = await Promise.all([
+    const [{ data: o }, alerts] = await Promise.all([
       db.from("orders").select("ref, full_name, phone, total_kobo, delivery_window, gift_wrap, address, created_at, zone:delivery_zones(name), items:order_items(name, qty)").eq("id", orderId).single(),
-      db.from("site_settings").select("value").eq("key", "storefront").maybeSingle(),
+      readOrderAlerts(db),
     ]);
-    const v = (settings?.value ?? {}) as { orderAlerts?: boolean; orderAlertEmail?: string; contactEmail?: string };
-    if (!o || v.orderAlerts === false) return;
-    let to = v.orderAlertEmail || process.env.ORDER_ALERT_EMAIL || "";
+    if (!o || !alerts.enabled) return;
+    let to = alerts.email || process.env.ORDER_ALERT_EMAIL || "";
     if (!to) {
       // nobody chosen yet: the owner's own sign-in email
       const { data: owners } = await db.from("profiles").select("id").eq("role", "owner").limit(3);

@@ -2,8 +2,8 @@
    in the code). Internally its pages are still under src/app/admin; the proxy
    rewrites /<slug>/… to /admin/… and hides /admin itself. */
 
-/** Forgiving about how the value was typed in Vercel: "studio-604", "/studio-604/", "<studio-604>",
-    "www.naziabotanics.com/studio-604", a full https:// address, quotes, spaces or capitals all mean /studio-604.
+/** Forgiving about how the value was typed in Vercel: "my-studio", "/my-studio/", "<my-studio>",
+    "www.example.com/my-studio", a full https:// address, quotes, spaces or capitals all mean /my-studio.
     Anything unusable falls back to /admin, so the Studio is never lost. */
 export function normaliseSlug(raw: string | undefined) {
   const parts = (raw ?? "").replace(/["'<>\s]/g, "").split("/").filter(Boolean);

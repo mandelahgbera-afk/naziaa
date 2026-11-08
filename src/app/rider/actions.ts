@@ -22,11 +22,15 @@ export async function startDelivery(orderId: string) {
 }
 
 export async function completeDelivery(orderId: string, code: string, photoPath: string | null): Promise<Result> {
+  // the photo must be one taken for this order, as the rider app names it
+  const okPath = (p: string) => p.startsWith(`${orderId}/`) && /^[0-9a-f-]{36}\/\d{10,16}\.[a-z0-9]{1,5}$/.test(p);
+  if (photoPath !== null && !okPath(photoPath)) return { ok: false, error: "That photo can’t be used. Take it again, or remove it to finish without one." };
   const r = await move(orderId, "delivered", { code: code.trim() });
   if (r.ok) {
     const { supabase } = await requireRider();
     const { data: riderId } = await supabase.rpc("current_rider_id");
-    await supabase.from("delivery_proofs").insert({ order_id: orderId, rider_id: riderId, photo_path: photoPath });
+    const { error } = await supabase.from("delivery_proofs").insert({ order_id: orderId, rider_id: riderId, photo_path: photoPath });
+    if (error) console.error("delivery proof not saved", orderId, error.message);
     return { ok: true, message: "Delivered. Thank you!" };
   }
   return r;

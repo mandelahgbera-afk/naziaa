@@ -109,6 +109,7 @@ function JobCard({ job: j }: { job: Job }) {
   const [code, setCode] = useState("");
   const [reason, setReason] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoKey, setPhotoKey] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
 
   const a = j.address;
@@ -129,9 +130,11 @@ function JobCard({ job: j }: { job: Job }) {
     act(async () => {
       let path: string | null = null;
       if (photo) {
-        path = `${j.id}/${Date.now()}.${photo.name.split(".").pop() || "jpg"}`;
+        const ext = photo.name.includes(".") ? photo.name.split(".").pop()!.toLowerCase() : "";
+        path = `${j.id}/${Date.now()}.${/^[a-z0-9]{1,5}$/.test(ext) ? ext : "jpg"}`;
         const { error } = await supabaseBrowser().storage.from("delivery-proofs").upload(path, photo, { upsert: false });
-        if (error) path = null;
+        // never close the job as if the photo went through: say so, keep the photo for another try
+        if (error) return { ok: false, error: "The photo didn’t upload. Press Confirm to try again, or remove the photo to finish without it." };
       }
       return completeDelivery(j.id, code, path);
     });
@@ -183,8 +186,21 @@ function JobCard({ job: j }: { job: Job }) {
             </label>
             <label className="block text-sm text-ink-soft">
               Photo at the door (optional)
-              <input type="file" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} className="mt-2 block w-full text-sm" />
+              <input key={photoKey} type="file" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} className="mt-2 block w-full text-sm" />
             </label>
+            {photo && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPhoto(null);
+                  setPhotoKey((k) => k + 1); // clears the file picker too
+                  setMsg(null);
+                }}
+                className="text-sm text-ink-soft underline underline-offset-4"
+              >
+                Remove photo
+              </button>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setMode("idle")} className="rounded-full border border-line py-3 text-sm">Back</button>
               <button type="button" disabled={pending || code.length !== 6} onClick={complete} className="rounded-full bg-amber py-3 text-sm text-paper disabled:opacity-40">{pending ? "Saving…" : "Confirm"}</button>

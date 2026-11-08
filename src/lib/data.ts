@@ -27,8 +27,7 @@ export type StorefrontSettings = {
   /** the gentle newsletter invitation */
   nudgeEnabled: boolean;
   nudgeDelaySeconds: number;
-  orderAlerts: boolean;
-  orderAlertEmail: string;
+  // new-order alerts live in their own private row: see lib/order-alerts.ts
 };
 
 const DEFAULT_SETTINGS: StorefrontSettings = {
@@ -40,8 +39,6 @@ const DEFAULT_SETTINGS: StorefrontSettings = {
   tiktok: "https://www.tiktok.com/@nazia_botanics",
   nudgeEnabled: true,
   nudgeDelaySeconds: 35,
-  orderAlerts: true,
-  orderAlertEmail: "",
 };
 
 function db() {

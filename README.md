@@ -33,7 +33,10 @@ Next.js 16 · React 19 · Tailwind 4 · Supabase · Flutterwave · Resend · Mux
    - `supabase/migrations/20261007000000_performance.sql`
    - `supabase/migrations/20261101000000_insights.sql`
    - `supabase/migrations/20261105000000_push.sql`
+   - `supabase/migrations/20261108000000_order_safety.sql`
    - `supabase/seed.sql`
+
+   The site code from 8 Nov 2026 needs `20261108000000_order_safety.sql`: run it before deploying that code, or payments can't be confirmed.
 
 3. **Create the owner account.** Supabase → Authentication → Users → Add user (email + password, auto-confirm). Then in the SQL Editor:
 
@@ -60,4 +63,10 @@ Next.js 16 · React 19 · Tailwind 4 · Supabase · Flutterwave · Resend · Mux
 
 `pending_payment → paid → packed → assigned → out_for_delivery → delivered`, with `failed → assigned/returned`, `cancelled`, `refunded`.
 
-The database enforces these moves (`public.advance_order`). Staff can make any allowed move. Riders can only start, complete (with the customer's 6-digit code) or fail their own deliveries. Every change is logged in `order_events`, and the customer is emailed when the order goes out for delivery, is delivered or fails.
+The database enforces these moves. Staff read orders but can't write to them directly: every move goes through `public.advance_order`, choosing a rider through `public.assign_rider`, and a trigger refuses any other status change. `paid` is never a staff move: only `public.confirm_payment` sets it, which the server calls after Flutterwave has verified the transaction (the Studio's **Check payment** asks Flutterwave for an unpaid order). Riders can only start, complete (with the customer's 6-digit code) or fail their own deliveries. Every change is logged in `order_events`, and the customer is emailed when the order goes out for delivery, is delivered or fails.
+
+Stock is taken from the oldest batch first when an order is paid, and the product page names that batch. Cancelling or refunding a paid or packed order puts its bottles back. Returned orders don't go back on the shelf by themselves: adjust the batch by hand if the bottles can be sold again.
+
+## Tests
+
+`npm test` runs the database rules (order moves, payment, stock, who can read batches) against the real migrations in an in-memory Postgres (PGlite). No Docker and no Supabase project needed.

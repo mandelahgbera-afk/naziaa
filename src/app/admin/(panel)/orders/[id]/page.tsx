@@ -6,12 +6,12 @@ import { requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/catalog";
 import { adminHref } from "@/lib/admin-path";
 import { waLink } from "@/lib/social";
-import { NEXT_STATUSES, STATUS_LABEL } from "@/lib/order-status";
+import { STATUS_LABEL, staffMoves } from "@/lib/order-status";
 
 export default async function OrderDetail({ params }: PageProps<"/admin/orders/[id]">) {
   const { id } = await params;
   const { supabase } = await requireStaff();
-  const [{ data: o }, { data: events }, { data: riders }, { data: complaints }] = await Promise.all([
+  const [{ data: o }, { data: events }, { data: riders }, { data: complaints }, { data: proofRows }] = await Promise.all([
     supabase
       .from("orders")
       .select("*, zone:delivery_zones(name, uses_courier), rider:riders(name, phone), items:order_items(name, qty, unit_price_kobo, batch:batches(code)), customer:customers(id, marketing_opt_in)")
@@ -20,8 +20,18 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
     supabase.from("order_events").select("id, kind, from_status, to_status, message, created_at").eq("order_id", id).order("created_at", { ascending: false }),
     supabase.from("riders").select("id, name").eq("is_active", true).order("name"),
     supabase.from("complaints").select("id, category, body, status, created_at").eq("order_id", id).order("created_at", { ascending: false }),
+    supabase.from("delivery_proofs").select("id, photo_path, created_at, rider:riders(name)").eq("order_id", id).order("created_at", { ascending: false }),
   ]);
   if (!o) notFound();
+
+  // the door photos sit in a private bucket: short-lived links, for staff only
+  const proofs = await Promise.all(
+    (proofRows ?? []).map(async (p) => {
+      const { data } = p.photo_path ? await supabase.storage.from("delivery-proofs").createSignedUrl(p.photo_path, 3600) : { data: null };
+      const rider = (Array.isArray(p.rider) ? p.rider[0] : p.rider) as { name?: string } | null;
+      return { id: p.id, at: p.created_at, rider: rider?.name ?? null, hasPhoto: Boolean(p.photo_path), url: data?.signedUrl ?? null };
+    }),
+  );
 
   const address = o.address as { line1?: string; area?: string; city?: string; state?: string; landmark?: string; lat?: number | null; lng?: number | null };
   const mapLink = address.lat && address.lng ? `https://www.google.com/maps/dir/?api=1&destination=${address.lat},${address.lng}` : null;
@@ -44,7 +54,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
           <a href={waLink(o.phone)} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">WhatsApp</a>
           {mapLink ? <a href={mapLink} target="_blank" rel="noreferrer" className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Map</a> : <a href={`mailto:${o.email}`} className="pressable rounded-2xl bg-paper py-3 text-center text-sm">Email</a>}
         </div>
-        <OrderActions orderId={o.id} status={o.status} next={NEXT_STATUSES[o.status] ?? []} riders={riders ?? []} riderId={o.rider_id} />
+        <OrderActions orderId={o.id} status={o.status} next={staffMoves(o.status)} riders={riders ?? []} riderId={o.rider_id} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -76,7 +86,7 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
           <OrderActions
             orderId={o.id}
             status={o.status}
-            next={NEXT_STATUSES[o.status] ?? []}
+            next={staffMoves(o.status)}
             riders={riders ?? []}
             riderId={o.rider_id}
           />
@@ -128,6 +138,30 @@ export default async function OrderDetail({ params }: PageProps<"/admin/orders/[
             {o.failed_reason && <p className="mt-2 text-sm text-[#7a2e12]">Failed: {o.failed_reason}</p>}
             {o.delivery_rating && <p className="mt-2 text-sm">Rated {o.delivery_rating}/5{o.delivery_feedback ? ` — “${o.delivery_feedback}”` : ""}</p>}
           </Card>
+          {(proofs.length > 0 || o.status === "delivered") && (
+            <Card>
+              <p className="eyebrow mb-3">Proof of delivery</p>
+              {proofs.length === 0 && <p className="text-sm text-ink-soft">Closed with the customer’s code. No photo was sent.</p>}
+              <ul className="space-y-4">
+                {proofs.map((p) => (
+                  <li key={p.id}>
+                    {p.url ? (
+                      <a href={p.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl bg-cream">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a site image */}
+                        <img src={p.url} alt="Photo taken at the door" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                      </a>
+                    ) : (
+                      <p className="text-sm text-ink-soft">{p.hasPhoto ? "The photo couldn’t be loaded. Refresh to try again." : "Closed with the customer’s code. No photo was sent."}</p>
+                    )}
+                    <p className="mt-2 text-xs text-muted">
+                      {new Date(p.at).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                      {p.rider ? ` · ${p.rider}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           <Card>
             <p className="eyebrow mb-3">Payment</p>
             <p className="text-sm text-ink-soft">{o.payment_provider} · {o.provider_tx_id ?? "not yet paid"}</p>

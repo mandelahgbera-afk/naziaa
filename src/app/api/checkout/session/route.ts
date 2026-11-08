@@ -15,10 +15,42 @@ const Body = z.object({
   lines: z.array(z.object({ slug: z.string().regex(/^[a-z0-9-]+$/).max(80), qty: z.number().int().min(1).max(10) })).max(20),
 });
 
+/* "Don't email me about this bag": the contact details come off the open bag
+   (this one, and any other open bag under the same email), so no reminder can go. */
+const Forget = z.object({
+  forget: z.literal(true),
+  id: z.string().uuid().nullable().optional(),
+  email: z.string().trim().toLowerCase().email().max(254).optional().catch(undefined),
+});
+
+async function forget({ id, email }: z.infer<typeof Forget>) {
+  const db = supabaseAdmin();
+  const wipe = { email: null, full_name: null, phone: null };
+  if (id) {
+    const { error } = await db.from("checkout_sessions").update(wipe).eq("id", id).eq("status", "open");
+    if (error) throw error;
+  }
+  if (email) {
+    const { error } = await db.from("checkout_sessions").update(wipe).eq("email", email).eq("status", "open");
+    if (error) throw error;
+  }
+}
+
 export async function POST(req: Request) {
   const { ok } = await limit("checkout-session", clientIp(req), 20);
   if (!ok) return Response.json({ error: "slow down" }, { status: 429 });
-  const parsed = Body.safeParse(await req.json().catch(() => null));
+  const body = await req.json().catch(() => null);
+  const f = Forget.safeParse(body);
+  if (f.success) {
+    try {
+      await forget(f.data);
+      return Response.json({ id: null });
+    } catch (e) {
+      console.error("checkout session forget failed", e);
+      return Response.json({ error: "retry" }, { status: 500 });
+    }
+  }
+  const parsed = Body.safeParse(body);
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
   const { id, email, fullName, phone } = parsed.data;
   // names and prices come from the catalogue, never from the browser

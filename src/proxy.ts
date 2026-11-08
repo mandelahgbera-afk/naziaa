@@ -12,7 +12,7 @@ import { ADMIN_SLUG as SLUG } from "@/lib/admin-path";
 const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
 
 export async function proxy(request: NextRequest) {
-  // the Studio address is matched whatever the capitals (Studio-604 = studio-604)
+  // the Studio address is matched whatever the capitals (My-Studio = my-studio)
   const raw = request.nextUrl.pathname;
   const head = raw.split("/")[1] ?? "";
   const path = head.toLowerCase() === SLUG ? `/${SLUG}${raw.slice(head.length + 1)}` : raw;
